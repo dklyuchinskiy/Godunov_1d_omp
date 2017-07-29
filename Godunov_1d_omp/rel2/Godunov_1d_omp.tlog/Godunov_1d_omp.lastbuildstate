@@ -1,0 +1,2 @@
+#TargetFrameworkVersion=v4.0:PlatformToolSet=Intel C++ Compiler 17.0:EnableManagedIncrementalBuild=false:VCToolArchitecture=Native64Bit:WindowsTargetPlatformVersion=8.1
+rel2|Win32|C:\Users\dklyuchi\documents\visual studio 2015\Projects\Godunov_1d_omp\|
