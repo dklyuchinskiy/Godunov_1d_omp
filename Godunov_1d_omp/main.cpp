@@ -59,7 +59,7 @@ void iteration(int numb)
 	char FileName[255], FileName2[255], FileName3[255], FileName4[255];
 
 	FILE *fout, *fmesh;
-	FILE *fout2, *fout3;
+	FILE *fout2, *fout3, *file;
 	FILE* fout_NC;
 	FILE* fout4;
 
@@ -185,7 +185,8 @@ void iteration(int numb)
 	double loop_full[LOOPS] = { 0 };
 
 	/*********************************THE PROGRAM BELOW******************************/
-
+	sprintf(FileName2,"first step analysis_%c.dat", TYPE);
+	file = fopen(FileName2,"w");
 
 	printf("\nIteration %d\n", numb + 1);
 
@@ -380,31 +381,28 @@ void iteration(int numb)
 			if (last) printf("Full time loop: %lf\n", loop_full[2]);
 		}
 
-			// computation of conservative variables
+		// computation of conservative variables
 
-			if (last) printf("Loop 3\n");
-			loop_time = clock();
+		if (last) printf("Loop 3\n");
+		loop_time = clock();
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
-			{
-				wtime = omp_get_wtime();
+		{
+			wtime = omp_get_wtime();
 #pragma omp for simd schedule(simd:static) 
-				for (int i = 1; i < numcells; i++)
-				{
-					UFLUX[i] = uss[i];
-					FR[i] = dss[i] * uss[i];
-					FRU[i] = dss[i] * uss[i] * uss[i] + pss[i];
-					FRE[i] = (pss[i] / (GAMMA - 1.0) + 0.5*dss[i] * uss[i] * uss[i])*uss[i] + pss[i] * uss[i];
-				}
-				wtime = omp_get_wtime() - wtime;
-				LOOP_TIME[3][omp_get_thread_num()] += wtime;
-				if (last) printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[3][omp_get_thread_num()]);
+			for (int i = 1; i < numcells; i++)
+			{
+				UFLUX[i] = uss[i];
+				FR[i] = dss[i] * uss[i];
+				FRU[i] = dss[i] * uss[i] * uss[i] + pss[i];
+				FRE[i] = (pss[i] / (GAMMA - 1.0) + 0.5*dss[i] * uss[i] * uss[i])*uss[i] + pss[i] * uss[i];
 			}
-			loop_full[3] += (double)(clock() - loop_time)/ CLOCKS_PER_SEC;
-			if (last) printf("Full time loop: %lf\n", loop_full[3]);
+			wtime = omp_get_wtime() - wtime;
+			LOOP_TIME[3][omp_get_thread_num()] += wtime;
+			if (last) printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[3][omp_get_thread_num()]);
+		}
+		loop_full[3] += (double)(clock() - loop_time) / CLOCKS_PER_SEC;
+		if (last) printf("Full time loop: %lf\n", loop_full[3]);
 
-#ifdef DEBUG
-			first_step_validation(numcells, c_c, timer, U, P, R, UFLUX);
-#endif
 
 		/****************************************************************
 		IMPORTANT: Solving of this problem is in conservative variables!
@@ -452,7 +450,6 @@ void iteration(int numb)
 		loop_full[5] += (double)(clock() - loop_time) / CLOCKS_PER_SEC;
 		if (last) printf("Full time loop: %lf\n", loop_full[5]);
 
-		
 #if PROBLEM==0
 
 		/*******************difference analit and numeric solutions************/
@@ -486,7 +483,7 @@ void iteration(int numb)
 
 		//************ CURRENT DOMAIN **********************//
 
-	//	analitical_riemann_modeling(numcells, initial_density(0.1), initial_velocity(0.1), initial_pressure(0.1), initial_density(0.9), initial_velocity(0.9), initial_pressure(0.9), timer, all_exact_R, all_exact_U, all_exact_P);
+		//analitical_riemann_modeling(numcells, initial_density(0.1), initial_velocity(0.1), initial_pressure(0.1), initial_density(0.9), initial_velocity(0.9), initial_pressure(0.9), timer, all_exact_R, all_exact_U, all_exact_P);
 
 #ifdef DIFF_ANALIT_RIEMANN
 		for (int i = 0; i < numcells; i++)
@@ -502,6 +499,13 @@ void iteration(int numb)
 		diff_riem_S[0:numcells] = S[0:numcells] - all_exact_S[0:numcells];
 #endif
 		timer += tau;
+
+#ifdef DEBUG
+		if (c_c <= 2)
+		{
+			first_step_validation(file, numcells, c_c, timer, R, U, P, dss, uss, pss);
+		}
+#endif
 
 		/************** cчет интегралов по контуру ****************/
 #ifdef INTEGRAL
@@ -621,8 +625,8 @@ void iteration(int numb)
 
 #endif
 #if(PROBLEM==2 || PROBLEM==9)
-	//			analitical_riemann_modeling(numcells, initial_density(0.05), initial_velocity(0.05), initial_pressure(0.05), initial_density(0.95), initial_velocity(0.95), initial_pressure(0.95), timer, all_exact_R, all_exact_U, all_exact_P);
-	//			analitical_writing_into_file(numcells, all_exact_R, all_exact_U, all_exact_P, time_control[k]);
+				analitical_riemann_modeling(numcells, initial_density(0.05), initial_velocity(0.05), initial_pressure(0.05), initial_density(0.95), initial_velocity(0.95), initial_pressure(0.95), timer, all_exact_R, all_exact_U, all_exact_P);
+				analitical_writing_into_file(numcells, all_exact_R, all_exact_U, all_exact_P, time_control[k]);
 #endif
 				proverka[k] = 1;
 
@@ -658,7 +662,7 @@ void iteration(int numb)
 #ifdef OUTPUT_N_SMOOTH
 #ifdef PRINT
 #if(PROBLEM==2 || PROBLEM==9)
-	//gnuplot_analitical_riemann2(numcells, w_num_r, w_num_u, w_num_p);
+	gnuplot_analitical_riemann2(numcells, w_num_r, w_num_u, w_num_p);
 #else
 #ifdef NC2
 	gnuplot_n_smooth_NC2(numcells, w_num_r, w_num_u, w_num_p);
@@ -1059,6 +1063,7 @@ void iteration(int numb)
 	_mm_free(RE);
 	_mm_free(RS);
 
+	fclose(file);
 
 #ifdef PRINT	
 #ifndef OUTPUT_N_SMOOTH

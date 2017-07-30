@@ -40,6 +40,7 @@
 
 //#define NEW_VERSION  // без перекидки значений с 1 на 0 элемент массива
 
+#define DEBUG
 
 #ifdef INTEGRAL
 #define RUNGE
@@ -54,7 +55,7 @@
 #define OMP_CORES 4
 #define LOOPS 6
 
-#define PROBLEM		12
+#define PROBLEM		9
 /*
 0 - shock wave
 1 - rarify wave
@@ -81,7 +82,7 @@
 
 /*************************************/
 
-#define EXACT_DISC
+//#define EXACT_DISC
 
 #ifdef EXACT_DISC
 #define CROSS_POINT time_max_array[PROBLEM]

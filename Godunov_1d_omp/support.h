@@ -46,5 +46,5 @@ void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss
 void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last);
 void iteration(int numb);
 void iteration_bound(int numb);
-void first_step_validation(int numcells, double c_c, double timer, double *R, double *U, double *P, double *UFLUX);
+void first_step_validation(FILE *file, int numcells, int c_c, double timer, double *R, double *U, double *P, double *dss, double *uss, double *pss);
 void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P, double *FR, double *FRU, double *FRE);

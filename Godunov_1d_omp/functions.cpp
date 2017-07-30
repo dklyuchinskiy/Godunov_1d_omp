@@ -563,25 +563,22 @@ void linear(double dl, double ul, double pl, double dr, double ur, double pr, do
 
 }
 
-void first_step_validation(int numcells, double c_c, double timer, double *R, double *U, double *P, double *UFLUX)
+void first_step_validation(FILE *file3, int numcells, int c_c, double timer, double *R, double *U, double *P, double *dss, double *uss, double *pss)
 {
 	double len = LENGTH;
 	double dx = len / double(numcells);
 	double x;
 
-	FILE* file3;
 
-	//Comparing u and bigU
-	if (c_c == 10)
+	fprintf(file3, "cc: %d timer: %lf\n\n", c_c, timer);
+	
+	for (int i = 0; i < numcells; i++)
 	{
-		file3 = fopen("comparing_U.dat", "w+");
-		for (int i = 0; i < numcells; i++)
-		{
-			x = i*dx + 0.5*dx;
-			fprintf(file3, "%lf %lf %lf\n", x, U[i], UFLUX[i]);
-		}
-		fclose(file3);
+		x = i*dx + 0.5*dx;
+		fprintf(file3, "%lf %lf %lf %lf %lf %lf %lf\n", x, R[i], U[i], P[i], dss[i], uss[i], pss[i]);
 	}
+	fprintf(file3,"*********************************************************\n\n");
+	
 }
 
 
@@ -2384,7 +2381,7 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 
 
 
-	for (int i = 0; i < 5; i++) //итерации по характеристикам газа
+	for (int i = 0; i < 4; i++) //итерации по характеристикам газа
 	{
 		if (i == 3) continue;
 		/*----------------------------------------*/
@@ -2436,7 +2433,7 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 			if (i != 4)
 			{
 				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
-				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
+				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, TYPE, time_control[k], i + 2);
 			}
 			else
 			{
