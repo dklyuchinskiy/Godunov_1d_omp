@@ -81,7 +81,7 @@
 
 /*************************************/
 
-//#define EXACT_DISC
+#define EXACT_DISC
 
 #ifdef EXACT_DISC
 #define CROSS_POINT time_max_array[PROBLEM]

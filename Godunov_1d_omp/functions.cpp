@@ -496,14 +496,14 @@ void linear_solver(int numcells, double* R, double* U, double* P, double* dss, d
 			{
 				bigP = (ul - ur + pl / (dl*cl) + pr / (dr*cr)) / (hl + hr);
 				bigU = (dl*cl*ul + dr*cr*ur + pl - pr) / (dl*cl + dr*cr);
-				if (bigU >= 0) bigS = pl / pow(dl, GAMMA);
+	/*			if (bigU >= 0) bigS = pl / pow(dl, GAMMA);
 				else bigS = pr / pow(dr, GAMMA);
 				help = bigP / bigS;
-				bigR = pow(help, 1.0 / GAMMA);
-	/*			R3 = dl - dl / cl * (bigU - ul);
+				bigR = pow(help, 1.0 / GAMMA);*/
+				R3 = dl - dl / cl * (bigU - ul);
 				R4 = dr + dr / cr * (bigU - ur);
-				if (0 < bigU) bigR = R3;
-				else bigR = R4;*/
+				if (bigU > 0) bigR = R3;
+				else bigR = R4;
 				
 			}
 
@@ -553,7 +553,7 @@ void linear(double dl, double ul, double pl, double dr, double ur, double pr, do
 		bigR = pow(help, 1.0 / GAMMA);*/
 		R3 = dl - dl / cl * (bigU - ul);
 		R4 = dr + dr / cr * (bigU - ur);
-		if (0 < bigU) bigR = R3;
+		if (bigU > 0) bigR = R3;
 		else bigR = R4;
 	}
 	
