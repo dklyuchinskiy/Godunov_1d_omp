@@ -51,11 +51,13 @@
 #define GRID 3
 
 #define N_smooth 40
+#define N_bound 50
+
 
 #define OMP_CORES 4
 #define LOOPS 6
 
-#define PROBLEM		9
+#define PROBLEM		12
 /*
 0 - shock wave
 1 - rarify wave

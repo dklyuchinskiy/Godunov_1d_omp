@@ -311,8 +311,8 @@ void iteration(int numb)
 	int last = 0;
 
 #ifdef FLUX_COUNT
-	FILE* array_flux[N_smooth];
-	for (int i = 0; i < N_smooth; i++)
+	FILE* array_flux[N_bound];
+	for (int i = 0; i < N_bound; i++)
 	{
 		sprintf(FileName4, "FLUXES_%c_%d_P%d_N%d.dat", TYPE, i, int(PROBLEM), int(numcells));
 		array_flux[i] = fopen(FileName4, "w");
@@ -638,14 +638,14 @@ void iteration(int numb)
 
 #ifdef FLUX_COUNT
 		/************** расчет движения потоков ********************/
-		double t[N_smooth] = { 0 };
-		int t_ind[N_smooth] = { 0 };
+		double t[N_bound] = { 0 };
+		int t_ind[N_bound] = { 0 };
 		int numcells_flux;
 		numcells_flux = numcells;
 
-		for (int i = 0; i < N_smooth; i++)
+		for (int i = 0; i < N_bound; i++)
 		{
-			t_ind[i] =  i * numcells_flux / N_smooth;
+			t_ind[i] =  i * numcells_flux / N_bound;
 			t[i] = (t_ind[i] + 0.5)*dx + UFLUX[t_ind[i]] * timer;
 			fprintf(array_flux[i], "%lf %lf %lf\n", t[i], timer, UFLUX[t_ind[i]]);
 		}
@@ -654,7 +654,7 @@ void iteration(int numb)
 	} /******************************************* The end of iteration**************************/
 
 #ifdef FLUX_COUNT
-	for (int i = 0; i < N_smooth; i++)
+	for (int i = 0; i < N_bound; i++)
 		fclose(array_flux[i]);
 
 #endif
