@@ -344,6 +344,7 @@ void starpu(double &p, double &u, double dl, double ul, double pl, double cl, do
 	// определение скорости
 	u = 0.5 * (ul + ur + fr - fl);
 }
+
 void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss)
 {
 
@@ -1520,6 +1521,129 @@ void outline_integral_riemann(int numcells, double timer, double tau, const doub
 
 
 /**************************************************/
+void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, double *U, double* P, double *S_diff)
+{
+	FILE* fout;
+	char FileName[255];
+	double x;
+	double dx = LENGTH / double(numcells);
+	double ps, us, ds, cs, es, es_d;
+
+	int proverka[N_smooth] = { 0 };
+	double time_control[N_smooth];
+	double k_step = time_max_array[PROBLEM] / N_smooth;
+
+	for (int i = 0; i < N_smooth; i++)
+	{
+		time_control[i] = (i + 1)*k_step;
+	}
+
+	for (int k = 0; k < N_smooth; k++)
+	{
+
+		if (fabs(timer - time_control[k]) <= tau && proverka[k] == 0)
+		{
+
+#ifndef NC					
+			sprintf(FileName, "workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, time_control[k]);
+			fout = fopen(FileName, "w");
+			fprintf(fout, "Timer: %lf\n", timer);
+#else
+			sprintf(FileName2, "workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf_NC.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, time_control[k]);
+			fout_NC = fopen(FileName2, "w");
+			fprintf(fout_NC, "Timer: %lf\n", timer);
+#endif
+
+			for (int i = 0; i < numcells; i++)  // вывод всегда по 100 точек ( с первой итерации которые )
+			{
+#ifndef NC
+				//x_layer[i] = i*dx + 0.5*dx-0.4533*timer;
+				x = i*dx + 0.5*dx;
+
+#else
+				//x_layer_NC[i] = i*dx + 0.5*dx - D_analit*timer - DISC_POINT;      //без деления на t^alpha
+#ifdef alpha
+				x_layer_NC[i] = (i*dx + 0.5*dx - D_analit*timer - DISC_POINT) / (C1*pow(timer, alpha));
+#endif
+
+#ifdef NC2
+				x_layer_NC[i] = (i*dx + 0.5*dx - DISC_POINT - D_analit*timer) / dx;
+#else
+				x_layer_NC[i] = (i*dx + 0.5*dx - DISC_POINT - D_analit*timer);
+				//	x_layer_NC[i] = (i*dx + 0.5*dx - 0.43*timer);
+#endif
+#endif
+
+			//	x_layer_NC[i] = (i*dx + 0.5*dx - DISC_POINT) / (D_analit*pow(timer, alpha)); //еще один случай
+
+				ds = R[i];
+				//us = U[i] - 0.4533;
+				us = U[i];
+				ps = P[i];
+				cs = sqrt(GAMMA*P[i] / R[i]);
+				es = P[i] / pow(R[i], GAMMA);
+				es_d = S_diff[i];
+
+#ifdef SW_POINTS_PRINT
+
+#if (PROBLEM == 0 || PROBLEM == 1)
+				if (P[i] < (initial_pressure(0.05) - DELTA) && P[i] > (initial_pressure(0.95) + DELTA)) w_num_p[k]++;
+				if (R[i] < (initial_density(0.05) - DELTA) && R[i] > (initial_density(0.95) + DELTA)) w_num_r[k]++;
+				if (U[i] < (initial_velocity(0.05) - DELTA) && U[i] > (initial_velocity(0.95) + DELTA)) w_num_u[k]++;
+#elif (PROBLEM == 2)
+				// shock wave checking
+				if (P[i] < (1.401789770179879 - DELTA) && P[i] > (1.0 + DELTA)) w_num_p[k]++;
+				if (R[i] < (1.271413930046081 - DELTA) && R[i] > (1.0 + DELTA)) w_num_r[k]++;
+				if (U[i] < (0.292868067614595 - DELTA) && U[i] > (0.0 + DELTA) && i > numcells / 2) w_num_u[k]++;
+#elif (PROBLEM == 8)
+				if (P[i] < (st_P1 - DELTA - 0.005) && P[i] > (st_P2 + DELTA)) sw1_num_p[k]++;
+				if (P[i] < (st_P2 - DELTA - 0.005) && P[i] > (st_P3 + DELTA)) sw2_num_p[k]++;
+				if (P[i] < (3.2627) && P[i] > (st_P3 + DELTA)) sw3_num_p[k]++;
+
+				if (R[i] < (st_R1 - DELTA) && R[i] > (st_R2 + DELTA)) sw1_num_r[k]++;
+				if (R[i] < (st_R2 - DELTA) && R[i] > (st_R3 + DELTA)) sw2_num_r[k]++;
+				if (R[i] < (st_R1 - 0.03) && R[i] > (st_R3 + DELTA)) sw3_num_r[k]++;
+
+				if (U[i] < (st_U1 - DELTA) && U[i] > (st_U2 + DELTA)) sw1_num_u[k]++;
+				if (U[i] < (st_U2 - DELTA) && U[i] > (st_U3 + DELTA)) sw2_num_u[k]++;
+				if (U[i] < (st_U1 - 0.03) && U[i] > (st_U3 + DELTA)) sw3_num_u[k]++;
+#elif (PROBLEM == 4)
+				if (P[i] < (st_P1 - DELTA - 0.005) && P[i] > (st_P2 + DELTA)) sw1_num_p[k]++;
+				if (P[i] < (st_P2 - DELTA - 0.005) && P[i] > (st_P3 + DELTA)) sw2_num_p[k]++;
+				if (P[i] < (st_P1 - DELTA - 0.02) && P[i] > (st_P3 + DELTA)) sw3_num_p[k]++;
+
+				if (R[i] < (st_R1 - DELTA) && R[i] > (st_R2 + DELTA)) sw1_num_r[k]++;
+				if (R[i] < (st_R2 - DELTA) && R[i] > (st_R3 + DELTA)) sw2_num_r[k]++;
+				if (R[i] < (st_R1 - 0.03) && R[i] > (st_R3 + DELTA)) sw3_num_r[k]++;
+
+				if (U[i] < (st_U1 - DELTA) && U[i] > (st_U2 + DELTA)) sw1_num_u[k]++;
+				if (U[i] < (st_U2 - DELTA) && U[i] > (st_U3 + DELTA)) sw2_num_u[k]++;
+				if (U[i] < (st_U1 - 0.03) && U[i] > (st_U3 + DELTA)) sw3_num_u[k]++;
+#endif
+#endif
+
+				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x, ds, us, ps, cs, es, es_d);
+#ifdef NC
+				fprintf(fout_NC, "%9.6lf %lf %lf %lf %lf %lf \n", x_layer_NC[i], ds, us, ps, cs, es);
+#endif
+
+			}
+
+			fclose(fout);
+
+#ifdef NC
+			fclose(fout_NC);
+
+#endif
+#if(PROBLEM==2 || PROBLEM==9)
+			analitical_riemann_modeling(numcells, initial_density(0.05), initial_velocity(0.05), initial_pressure(0.05), initial_density(0.95), initial_velocity(0.95), initial_pressure(0.95), timer, all_exact_R, all_exact_U, all_exact_P);
+			analitical_writing_into_file(numcells, all_exact_R, all_exact_U, all_exact_P, time_control[k]);
+#endif
+			proverka[k] = 1;
+
+		}
+	}
+}
 
 void gnuplot_one_iteration(int numcells) //together with analitical solution
 {
