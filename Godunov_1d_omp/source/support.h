@@ -17,6 +17,7 @@ double gyugonio(double p1, double ro1, double p2/*за ударной волной*/);
 double sw_speed2(double ro1, double u1, double p1, double ro2 /*за ударной волной*/, double p2 /*за ударной волной*/);
 double sw_speed(double ro1, double ro2, double u1, double u2);
 double* finite_difference(int numb, double *mas);
+void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P);
 
 void analitical_RW(FILE* file_name, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r, double numb);
 void analitical_SW(int numcells, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r, double *res_p, double *res_u, double* res_d, double timer);

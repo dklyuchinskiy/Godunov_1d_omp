@@ -82,6 +82,11 @@ float right_RP[3] = { 4, 4, 4 };
 
 char dip[3] = { 'D', 'I', 'P' };
 
+float percents[NUM_ITER];
+
+double boundary[NUM_ITER][3] = { 0 };
+
+
 /***********************************************************/
 
 
@@ -1076,58 +1081,232 @@ void analitical_riemann(int numcells, double p1, double ro1, double u1, double p
 	//	printf("Pressure: %lf\nSpeed: %lf\nIterations: %i\n", *sol_p, *sol_u, l);
 }
 
-/*
-void analitical_SW_file(FILE* file_name, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r, double numb = 1)
+void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P)
 {
-FILE* out_ul, *out_pl, *out_dl;
-FILE* out_um, *out_pm, *out_dm;
-FILE* out_ur, *out_pr, *out_dr;
-out_pl = fopen("data_pl.txt", "w");
-out_ul = fopen("data_ul.txt", "w");
-out_dl = fopen("data_dl.txt", "w");
+	/* Rarify wave - numeric vs analitic */
+	double c, l0, A, tt;
+	double q1, q2, q3, q4, q5, q6, q7, q8, q11;
+	double iu_l, id_l, ip_l, iu_r, id_r, ip_r;
+	double x, xl, xr;
+	int check1 = 0, check2 = 0;
 
-out_pm = fopen("data_pm.txt", "w");
-out_um = fopen("data_um.txt", "w");
-out_dm = fopen("data_dm.txt", "w");
+	double dx = LENGTH / double(numcells);
 
-out_pr = fopen("data_pr.txt", "w");
-out_ur = fopen("data_ur.txt", "w");
-out_dr = fopen("data_dr.txt", "w");
+	iu_l = initial_velocity(0.05);
+	id_l = initial_density(0.05);
+	ip_l = initial_pressure(0.05);
 
-double D_analit;
-double x;
+	iu_r = initial_velocity(0.2);
+	id_r = initial_density(0.2);
+	ip_r = initial_pressure(0.2);
 
-D_analit = (id_r * iu_r - id_l * iu_l) / (id_r - id_l);
+	c = sqrt(GAMMA*ip_r / id_r);
+	l0 = iu_r - 2 * c / (GAMMA - 1);
+	A = ip_r / (pow(id_r, GAMMA));
+	tt = (numb + 1)*0.1;
 
-x = D_analit * numb * time_max_array[0] + 0.1; // discontinuity point
+	// для скорости u=q3*x+q11
 
-fprintf(out_pl, "%lf %lf\n%lf %lf", 0.0, ip_l, x, ip_l);
-fprintf(out_ul, "%lf %lf\n%lf %lf", 0.0, iu_l, x, iu_l);
-fprintf(out_dl, "%lf %lf\n%lf %lf", 0.0, id_l, x, id_l);
-
-fprintf(out_pm, "%lf %lf\n%lf %lf", x, ip_l, x, ip_r);
-fprintf(out_um, "%lf %lf\n%lf %lf", x, iu_l, x, iu_r);
-fprintf(out_dm, "%lf %lf\n%lf %lf", x, id_l, x, id_r);
-
-
-fprintf(out_pr, "%lf %lf\n%lf %lf", x, ip_r, 1.0, ip_r);
-fprintf(out_ur, "%lf %lf\n%lf %lf", x, iu_r, 1.0, iu_r);
-fprintf(out_dr, "%lf %lf\n%lf %lf", x, id_r, 1.0, id_r);
-
-fclose(out_dl);
-fclose(out_dr);
-fclose(out_dm);
-fclose(out_ul);
-fclose(out_ur);
-fclose(out_um);
-fclose(out_pl);
-fclose(out_pr);
-fclose(out_pm);
+	q1 = (GAMMA - 1) / (GAMMA + 1);
+	q11 = q1*l0;
+	q2 = 2 / (GAMMA - 1);
+	q3 = 2 / (GAMMA + 1);
+	xl = (iu_l - q11)*tt / q3 + DISC_POINT; // счет по старому, по итерациям - какая итерация, такое и время. 
+	xr = (iu_r - q11)*tt / q3 + DISC_POINT; // в нашем случае ЭТО НЕВЕРНО, так как теперь итерации отвечают только за ШАГ СЕТКИ, время должно быть ФИКСИРОВАНО
+									 // здесь ошибка при вычислении точного решения!!!
 
 
-return;
+									 // 0-U, 1-P, 2-R, 3-RU, 4-RE
+	double** difference_RW;
+	difference_RW = new double*[5];
+
+	for (int j = 0; j < 5; j++)
+		difference_RW[j] = new double[numcells];
+
+	double* RW_R, *RW_P, *RW_U;
+	RW_R = new double[numcells];
+	RW_P = new double[numcells];
+	RW_U = new double[numcells];
+
+	int counter = 0, counter_all = 0, counter2 = 0;
+
+	for (int i = 0; i < numcells; i++)
+	{
+		x = i*dx + 0.5*dx;
+
+		if (x < xl)
+		{
+			RW_U[i] = iu_l; // FOR RARIFY WAVE
+			RW_P[i] = ip_l;
+			RW_R[i] = id_l;
+			difference_RW[0][i] = U[i] - RW_U[i];
+			difference_RW[1][i] = P[i] - RW_P[i];
+			difference_RW[2][i] = R[i] - RW_R[i];
+			difference_RW[3][i] = 0;
+			difference_RW[4][i] = 0;
+			if (fabs(difference_RW[1][i]) <= 0.02)
+			{
+				counter2++;
+			}
+
+		}
+		if (x >= xl && x <= xr)
+		{
+			counter_all++;
+			RW_U[i] = RW_prop(0, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r);
+			difference_RW[0][i] = U[i] - RW_prop(0, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r);
+
+			RW_P[i] = RW_prop(1, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r);
+			difference_RW[1][i] = P[i] - RW_prop(1, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r);
+
+			if (fabs(difference_RW[1][i]) <= 0.02)
+			{
+				counter++;
+				counter2++;
+			}
+
+			RW_R[i] = RW_prop(2, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r);
+			difference_RW[2][i] = R[i] - RW_prop(2, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r);
+
+			difference_RW[3][i] = R[i] * U[i] - RW_prop(2, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r)*RW_prop(0, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r);
+			difference_RW[4][i] = R[i] * (P[i] / pow(R[i], GAMMA) + SQ_2(U[i])) - RW_prop(2, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r)*(RW_prop(1, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r) / pow(RW_prop(2, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r), GAMMA) + SQ_2(RW_prop(0, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r)));
+		}
+		if (x > xr)
+		{
+			RW_U[i] = iu_r;
+			RW_P[i] = ip_r;
+			RW_R[i] = id_r;
+
+			difference_RW[0][i] = U[i] - RW_U[i];
+			difference_RW[1][i] = P[i] - RW_P[i];
+			difference_RW[2][i] = R[i] - RW_R[i];
+			difference_RW[3][i] = 0;
+			difference_RW[4][i] = 0;
+			if (fabs(difference_RW[1][i]) <= 0.02)
+			{
+				counter2++;
+			}
+
+		}
+
+	}
+
+	check1 = 0;
+	check2 = 0;
+
+	int *i_helper;
+	i_helper = new int[10];
+
+	double *x_helper;
+	x_helper = new double[10];
+
+	double xl_num, xr_num;
+
+	/****************Boundary of numerical rarify wave******************/
+
+	int i_mem_left = 0, i_mem_right = 0;
+
+	for (int i = 0; i < numcells; i++)
+	{
+		x = i*dx + 0.5*dx;
+		if (x >= xl && check1 == 0)
+		{
+			xl_num = x;   // по координате x
+			i_mem_left = i;  // по счетчику i
+			check1 = 1;
+		}
+		if (x >= xr && check2 == 0)
+		{
+			xr_num = x;
+			i_mem_right = i;
+			check2 = 1;
+		}
+	}
+	printf("%lf %lf", xl_num, xr_num);
+	/****************Boundary of numerical rarify wave******************/
+
+	if (numb > 0)
+	{
+		int helper = counter_all / 10;
+
+		for (int j = 0; j < 10; j++)
+		{
+			i_helper[j] = i_mem_left + j*helper;
+		}
+		printf("\n");
+		for (int i = 0; i < numcells; i++)
+		{
+			x = i*dx + 0.5*dx;
+			for (int j = 0; j < 10; j++)
+			{
+				if (i == i_helper[j])
+				{
+					x_helper[j] = x - (U[i] + sqrt(GAMMA*P[i] / R[i]))*time_max_array[PROBLEM];
+					//		printf("%lf\n", x_helper[j]);
+				}
+			}
+		}
+	}
+
+	printf("\nxl: %lf, xr: %lf\n", xl, xr);
+	printf("points in rarify wave %d %d\n", counter, counter_all);
+	printf("points2 %d %d\n", counter2, numcells);
+	percents[numb] = float(counter) / float(counter_all) * 100.0f;  //when in int i counter is devided by counter all, its a деление нацело, so the result of 1/4=0;
+	printf("percents of the middle: %f\n", percents[numb]);
+	percents[numb] = float(counter2) / float(numcells) * 100.0f;  //when in int i counter is devided by counter all, its a деление нацело, so the result of 1/4=0;
+	printf("percents of all stream [0:1]: %f\n", percents[numb]);
+
+	/**************** счет интегралов по контуру (верх - низ)********/
+
+#ifdef INTEGRAL
+	boundary[numb][0] = integral_x(numcells, dx, difference_RW[2]);
+	boundary[numb][1] = integral_x(numcells, dx, difference_RW[3]);
+	boundary[numb][2] = integral_x(numcells, dx, difference_RW[4]);
+#endif
+
+	/**************** счет интегралов по контуру (верх - низ)********/
+
+	FILE *out4;
+	FILE *out5;
+	char *FileName2, *FileName3;
+	FileName2 = new char[64];
+	FileName3 = new char[64];
+	sprintf(FileName2, "N%04d_RW_difference.dat", numcells);
+	sprintf(FileName3, "N%04d_RW_NUM_ANALITIC.dat", numcells);
+	out4 = fopen(FileName2, "w");
+	out5 = fopen(FileName3, "w");
+	check1 = 0;
+	check2 = 0;
+	for (int i = 0; i < numcells; i++)
+	{
+#ifndef NC
+		x = i*dx + 0.5*dx;
+		if (x >= xl && check1 == 0)
+		{
+			fprintf(out5, "left b: %lf %lf %lf %lf %lf %lf %lf %lf\n", x, U[i], RW_U[i], P[i], RW_P[i], R[i], RW_R[i], U[i] + sqrt(GAMMA*P[i] / R[i]));
+			check1 = 1;
+			continue;
+		}
+		if (x >= xr && check2 == 0)
+		{
+			fprintf(out5, "right b: %lf %lf %lf %lf %lf %lf %lf %lf\n", x, U[i], RW_U[i], P[i], RW_P[i], R[i], RW_R[i], U[i] + sqrt(GAMMA*P[i] / R[i]));
+			check2 = 1;
+			continue;
+		}
+		fprintf(out4, "%lf %lf %lf %lf\n", x, difference_RW[0][i], difference_RW[1][i], difference_RW[2][i]);
+		fprintf(out5, "%lf %lf %lf %lf %lf %lf %lf %lf\n", x, U[i], RW_U[i], P[i], RW_P[i], R[i], RW_R[i], U[i] + sqrt(GAMMA*P[i] / R[i]));
+#else
+
+		// Выведем в новых координатах
+		x_NC = (i*dx + 0.5*dx - 0.1) / (time_max_array[0] * (numb + 1));
+		fprintf(out4, "%lf %lf %lf %lf\n", x_NC, difference_RW[0][i], difference_RW[1][i], difference_RW[2][i]);
+		fprintf(out5, "%lf %lf %lf %lf %lf %lf %lf\n", x_NC, U[i], RW_U[i], P[i], RW_P[i], R[i], RW_R[i]);
+#endif
+	}
+	fclose(out4);
+	fclose(out5);
+
 }
-*/
 
 void analitical_riemann_modeling(int numcells, double ro1, double u1, double p1, double ro2, double u2, double p2, double timer,
 	/*output*/double *all_d, double *all_u, double *all_p)

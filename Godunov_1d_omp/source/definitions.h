@@ -17,7 +17,7 @@
 #define PRINT printf("Printing with GNUPLOT is set up\n");
 //#define P_PLUS_PG printf("Printing new task about pressure and pressure gradient");
 //#define SW_FINITE_DIFF  printf("Its a work with shock wave and right parts. We are determinating the wavelength\n")
-//#define RW_NUM_ANALITICAL  printf("We are conculating the difference between numeric and analitical solvers\n")   // если установлен этот макрос, то print не нуженropy 
+#define RW_NUM_ANALITICAL  printf("We are conculating the difference between numeric and analitical solvers\n")   // если установлен этот макрос, то print не нуженropy 
 //#define ENTROPY_RP  printf("Right parts are in entropy equation. We are calculating through entropy conservation law.");
 //#define SIMPLE printf("The simple print")
 //#define MY_OFFLOAD  printf("GFX offload")
@@ -57,7 +57,7 @@
 #define OMP_CORES 4
 #define LOOPS 6
 
-#define PROBLEM		12
+#define PROBLEM		1
 /*
 0 - shock wave
 1 - rarify wave
