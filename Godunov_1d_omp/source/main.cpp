@@ -673,19 +673,6 @@ void iteration(int numb)
 #endif
 	/************************** Analysis after count on one iteration *********************/
 
-#ifdef P_PLUS_PG
-	sprintf(FileName, "N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG_NC.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
-	fout3 = fopen(FileName, "w");
-	for (i = 0; i < numcells; i++)  // вывод всегда по 100 точек ( с первой итерации которые )
-	{
-		x_NC = (i*dx + 0.5*dx) - D_analit*time_max_array[0] * (numb + 1);  //NC
-		ps = P[i];
-		pg = pressure_gradient[i];
-
-		fprintf(fout3, "%9.6lf %30.24lf %30.24lf \n", x_NC, ps, pg / pg_max);
-	}
-#endif
-
 #if (PROBLEM==0)
 #ifdef SW_FINITE_DIFF
 	printf("************Pressure*****************\n");
@@ -742,10 +729,7 @@ void iteration(int numb)
 
 	int counter = 0, counter_all = 0, counter2 = 0;
 
-
-	//	cilk::reducer_opadd<int>counter_all(0);
-	//	cilk::reducer_opadd<int>counter(0);
-	for (i = 0; i<numcells; i++)
+	for (int i = 0; i < numcells; i++)
 	{
 		x = i*dx + 0.5*dx;
 
@@ -786,7 +770,7 @@ void iteration(int numb)
 			difference_RW[3][i] = R[i] * U[i] - RW_prop(2, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r)*RW_prop(0, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r);
 			difference_RW[4][i] = R[i] * (P[i] / pow(R[i], GAMMA) + SQ_2(U[i])) - RW_prop(2, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r)*(RW_prop(1, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r) / pow(RW_prop(2, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r), GAMMA) + SQ_2(RW_prop(0, x, numb, ip_l, id_l, iu_l, ip_r, id_r, iu_r)));
 		}
-		if (x>xr)
+		if (x > xr)
 		{
 			RW_U[i] = iu_r;
 			RW_P[i] = ip_r;
@@ -1009,9 +993,6 @@ int main()
 #else
 	//	gnuplot_n_smooth_NC(i);
 #endif
-#endif
-#ifdef P_PLUS_PG
-		gnuplot_P_PLUS_PG(nmesh[i]);
 #endif
 
 #ifdef RW_NUM_ANALITICAL
