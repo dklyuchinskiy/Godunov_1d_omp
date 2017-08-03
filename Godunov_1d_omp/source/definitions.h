@@ -35,6 +35,9 @@
 //#define SW_POINTS_PRINT
 //#define CFL_SWITCH
 
+#if (PROBLEM < 3)
+#define FLUX_COUNT
+#endif
 
 //#define BOUND_COND
 
@@ -57,7 +60,7 @@
 #define OMP_CORES 4
 #define LOOPS 6
 
-#define PROBLEM		2
+#define PROBLEM		18
 /*
 0 - shock wave
 1 - rarify wave

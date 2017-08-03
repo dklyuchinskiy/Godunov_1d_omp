@@ -203,13 +203,6 @@ void iteration(int numb)
 		printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[0][omp_get_thread_num()]);
 	}
 
-
-	/*********************** Boundary conditions ******************************/
-
-	boundary_conditions(numcells, dss, uss, pss, R, U, P, FR, FRU, FRE);
-	
-	/*********************** Boundary conditions ******************************/
-
 	printf("Loop 1\n");
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 	{
@@ -295,7 +288,7 @@ void iteration(int numb)
 	for (int i = 0; i < N_bound; i++)
 	{
 		sprintf(FileName4, "FLUXES_%c_%d_P%d_N%d.dat", TYPE, i, int(PROBLEM), int(numcells));
-		array_flux[i] = fopen(FileName4, "w");
+		array_flux[i] = fopen(FileName4, "w+");
 	}
 #endif
 
@@ -342,6 +335,13 @@ void iteration(int numb)
 		}
 
 		dtdx = tau / dx;
+
+
+		/*********************** Boundary conditions ******************************/
+
+		boundary_conditions(numcells, dss, uss, pss, R, U, P);
+
+		/*********************** Boundary conditions ******************************/
 
 
 		if (timer < CROSS_POINT)
@@ -501,22 +501,11 @@ void iteration(int numb)
 		/*************** cчет интегралов по контуру ****************/
 
 #ifdef OUTPUT_N_SMOOTH
-		gnuplot_n_smooth_steps(numcells, timer, tau, R, U, P, S, S_diff);
+		gnuplot_n_smooth_steps(numcells, timer, tau, R, U, P, S, S_diff, UFLUX);
 #endif
-
-#ifdef FLUX_COUNT
 		/************** расчет движения потоков ********************/
-		double t[N_bound] = { 0 };
-		int t_ind[N_bound] = { 0 };
-		int numcells_flux;
-		numcells_flux = numcells;
-
-		for (int i = 0; i < N_bound; i++)
-		{
-			t_ind[i] =  i * numcells_flux / N_bound;
-			t[i] = (t_ind[i] + 0.5)*dx + UFLUX[t_ind[i]] * timer;
-			fprintf(array_flux[i], "%lf %lf %lf\n", t[i], timer, UFLUX[t_ind[i]]);
-		}
+#ifdef FLUX_COUNT
+		flux_count(array_flux, numcells, timer, UFLUX);
 #endif
 
 	} /******************************************* The end of iteration**************************/

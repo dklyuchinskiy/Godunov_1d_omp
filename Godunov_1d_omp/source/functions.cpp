@@ -394,62 +394,89 @@ void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss
 	}
 }
 
-void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P, double *FR, double *FRU, double *FRE)
+void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P)
 {
-#ifdef BOUND_COND
-#if PROBLEM!=18
-	dss[0] = initial_density(0.0);
+	double c0, s0, cn, sn;
+
+#if (PROBLEM==18 || PROBLEM==20)
+	// set pressure
 	pss[0] = initial_pressure(0.0);
-	uss[0] = initial_velocity(0.0);
+	//	pss[numcells] = initial_pressure(LENGTH);
 
-	dss[numcells] = initial_density(LENGTH);
-	pss[numcells] = initial_pressure(LENGTH);
-	uss[numcells] = initial_velocity(LENGTH);
+	c0 = sqrt(GAMMA*P[0] / R[0]);
+	//	cn = sqrt(GAMMA*P[numcells] / R[numcells]);
 
-	FR[0] = dss[0] * uss[0];
-	FRU[0] = dss[0] * uss[0] * uss[0] + pss[0];
-	FRE[0] = (pss[0] / (GAMMA - 1.0) + 0.5*dss[0] * uss[0] * uss[0])*uss[0] + pss[0] * uss[0];
-	FR[numcells] = dss[numcells] * uss[numcells];
-	FRU[numcells] = dss[numcells] * uss[numcells] * uss[numcells] + pss[numcells];
-	FRE[numcells] = (pss[numcells] / (GAMMA - 1.0) + 0.5*dss[numcells] * uss[numcells] * uss[numcells])*uss[numcells] + pss[numcells] * uss[numcells];
-#else	
-		double x_init = timer*timer;
-	int arr_pnt_init = int((x_init - 0.5*dx) / dx);
+	double l0_const = U[0] - P[0] / (R[0] * c0);
+	//double rn_const = U[numcells] + P[numcells] / (R[numcells] * cn);
 
-	dss[arr_pnt_init] = initial_density(0.0);
-	pss[arr_pnt_init] = initial_pressure(0.0);
-	uss[arr_pnt_init] = timer;
+	uss[0] = l0_const + pss[0] / (R[0] * c0);
+	//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * cn);
 
-	FR[arr_pnt_init] = dss[arr_pnt_init] * uss[arr_pnt_init];
-	FRU[arr_pnt_init] = dss[arr_pnt_init] * uss[arr_pnt_init] * uss[arr_pnt_init] + pss[arr_pnt_init];
-	FRE[arr_pnt_init] = (pss[arr_pnt_init] / (GAMMA - 1.0) + 0.5*dss[arr_pnt_init] * uss[arr_pnt_init] * uss[arr_pnt_init])*uss[arr_pnt_init] + pss[arr_pnt_init] * uss[arr_pnt_init];
-	FR[numcells] = dss[numcells] * uss[numcells];
-	FRU[numcells] = dss[numcells] * uss[numcells] * uss[numcells] + pss[numcells];
-	FRE[numcells] = (pss[numcells] / (GAMMA - 1.0) + 0.5*dss[numcells] * uss[numcells] * uss[numcells])*uss[numcells] + pss[numcells] * uss[numcells];
+	s0 = P[0] / pow(R[0], GAMMA);
+	//	sn = P[numcells] / pow(R[numcells], GAMMA);
 
-#endif
-#else
-#if PROBLEM!=3
-	linear(R[0], U[0], P[0], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
+	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+	//	dss[numcells] = pow(pss[numcells] / sn, 1.0 / GAMMA);
+
 	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
-	FR[0] = dss[0] * uss[0];
-	FRU[0] = dss[0] * uss[0] * uss[0] + pss[0];
-	FRE[0] = (pss[0] / (GAMMA - 1.0) + 0.5*dss[0] * uss[0] * uss[0])*uss[0] + pss[0] * uss[0];
-	FR[numcells] = dss[numcells] * uss[numcells];
-	FRU[numcells] = dss[numcells] * uss[numcells] * uss[numcells] + pss[numcells];
-	FRE[numcells] = (pss[numcells] / (GAMMA - 1.0) + 0.5*dss[numcells] * uss[numcells] * uss[numcells])*uss[numcells] + pss[numcells] * uss[numcells];
 
-#else
+#elif (PROBLEM == 19)
+
+	uss[0] = timer;
+	c0 = sqrt(GAMMA*P[0] / R[0]);
+
+	double l0_const = U[0] - P[0] / (R[0] * c0);
+	double rn_const = U[numcells] + P[numcells] / (R[numcells] * Cn);
+
+	pss[0] = (uss[0] - l0_const)*(R[0] * c0);
+
+	s0 = P[0] / pow(R[0], GAMMA);
+	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+
+#elif (PROBLEM == 4)
+	// set pressure
+	pss[0] = 4.0 / exp(3.0*timer / time_max);
+	//	pss[numcells] = initial_pressure(LENGTH);
+
+	c0 = sqrt(GAMMA*P[0] / R[0]);
+	//	cn = sqrt(GAMMA*P[numcells] / R[numcells]);
+
+	double l0_const = U[0] - P[0] / (R[0] * c0);
+	double rn_const = U[numcells] + P[numcells] / (R[numcells] * cn);
+
+	uss[0] = l0_const + pss[0] / (R[0] * c0);
+	//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * cn);
+
+	s0 = P[0] / pow(R[0], GAMMA);
+	//	sn = P[numcells] / pow(R[numcells], GAMMA);
+
+	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+	//	dss[numcells] = pow(pss[numcells] / S[numcells], 1.0 / GAMMA);
+
+#elif (PROBLEM == 3)
 	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
 	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[0], U[0], P[0], dss[numcells], uss[numcells], pss[numcells]);
-	FR[0] = dss[0] * uss[0];
-	FRU[0] = dss[0] * uss[0] * uss[0] + pss[0];
-	FRE[0] = (pss[0] / (GAMMA - 1.0) + 0.5*dss[0] * uss[0] * uss[0])*uss[0] + pss[0] * uss[0];
-	FR[numcells] = dss[numcells] * uss[numcells];
-	FRU[numcells] = dss[numcells] * uss[numcells] * uss[numcells] + pss[numcells];
-	FRE[numcells] = (pss[numcells] / (GAMMA - 1.0) + 0.5*dss[numcells] * uss[numcells] * uss[numcells])*uss[numcells] + pss[numcells] * uss[numcells];
+#else
+	linear(R[0], U[0], P[0], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
+	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
 #endif
-#endif
+}
+
+void flux_count(FILE* *array_flux, int numcells, double timer, double *UFLUX)
+{
+	double t[N_bound] = { 0 };
+	int t_ind[N_bound] = { 0 };
+	int numcells_flux;
+	numcells_flux = numcells;
+
+	double dx = LENGTH / double(numcells);
+
+	for (int i = 0; i < N_bound; i++)
+	{
+		t_ind[i] = i * numcells_flux / N_bound;
+		t[i] = (t_ind[i] + 0.5)*dx + UFLUX[t_ind[i]] * timer;
+		fprintf(array_flux[i], "%lf %lf %lf\n", t[i], timer, UFLUX[t_ind[i]]);
+	}
 }
 
 void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last)
@@ -1704,7 +1731,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, const doub
 
 
 /**************************************************/
-void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, double *U, double* P, double *S, double *S_diff)
+void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, double *U, double* P, double *S, double *S_diff, double *UFLUX)
 {
 	FILE* fout;
 	char FileName[255];
@@ -1747,7 +1774,7 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, d
 			{
 #ifndef NC
 				//x_layer[i] = i*dx + 0.5*dx-0.4533*timer;
-				x = i*dx + 0.5*dx;
+				//x = i*dx + 0.5*dx;
 
 #else
 				//x_layer_NC[i] = i*dx + 0.5*dx - D_analit*timer - DISC_POINT;      //без деления на t^alpha
@@ -1761,6 +1788,12 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, d
 				x_layer_NC[i] = (i*dx + 0.5*dx - DISC_POINT - D_analit*timer);
 				//	x_layer_NC[i] = (i*dx + 0.5*dx - 0.43*timer);
 #endif
+#endif
+
+#if (PROBLEM == 18)
+				x = i * dx + 0.5 * dx + timer * UFLUX[i];
+#else
+				x = i*dx + 0.5*dx;
 #endif
 
 			//	x_layer_NC[i] = (i*dx + 0.5*dx - DISC_POINT) / (D_analit*pow(timer, alpha)); //еще один случай
