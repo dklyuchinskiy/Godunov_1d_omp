@@ -17,6 +17,7 @@ g7 = (GAMMA - 1.0) / 2.0,
 g8 = GAMMA - 1.0;
 
 
+double *all_exact_P, *all_exact_U, *all_exact_R, *all_exact_RE, *all_exact_S;
 
 
 /**************************************************/
@@ -38,17 +39,20 @@ int nprnt[10] = { 0, 1, 4, 13, 40, 121, 364, 1093, 3280 };
 char prop[6] = { 'R', 'U', 'P', 'C', 'S', 'D' };
 // D - diff in entropy
 // Q- right parts, W - only (dp/dx)^(2k)
-float left_SW[6] = { 0.9f, -0.1f, 0.9f, 1.1f, 0.998f, -0.0001f };
-float right_SW[6] = { 1.35f, 0.35f, 1.5f, 1.3f, 1.005f, 0.0001f };
+float left_SW[6] = { 0.9f, -0.1f, 0.9f, 1.1f, -0.001f, -0.0001f };
+float right_SW[6] = { 1.35f, 0.35f, 1.5f, 1.3f, 0.008f, 0.0002f };
 
 float left_19[6] = { 0.9f, -0.1f, 0.9f, 1.1f, 0.998f, -0.0001f };
 float right_19[6] = { 15.f, 5.0f, 15.f, 1.3f, 1.005f, 0.0001f };
 
+float left_7[6] = { 0.3f, -1.0f, 0.2f, 1.1f, 0.0f, 0.0f };
+float right_7[6] = { 1.0f, 1.0f, 1.0f, 1.3f, 0.25f, 0.001f };
+
 float left_SW_cs[6] = { 0.9f, -1.1f, 0.9f, 1.1f, 0.998f, 0.0f };
 float right_SW_cs[6] = { 1.35f, 1.1f, 1.5f, 1.3f, 1.005f, 0.0000005f };
 
-float left_ST[6] = { 0.9f, -0.1f, 0.9f, 1.1f, 0.75f, -0.0001f };
-float right_ST[6] = { 2.1f, 0.35f, 2.1f, 1.3f, 1.01f, 0.0001f };
+float left_ST[6] = { 0.9f, -0.1f, 0.9f, 1.1f, -0.3f, -0.0002f };
+float right_ST[6] = { 2.1f, 0.35f, 2.1f, 1.3f, 0.05f, 0.0003f };
 
 float left_RW[6] = { 1.5f, -0.35f, 1.3f, 1.05f, 0.95f, 0.0f };
 float right_RW[6] = { 2.1f, 0.1f, 2.1f, 1.25f, 1.05f, 0.0000005f };
@@ -466,7 +470,7 @@ void linear_solver(int numcells, double* R, double* U, double* P, double* dss, d
 	double bigU, bigP, bigS, bigR, help, hl, hr, R3, R4;
 
 
-#pragma omp parallel private(wtime) num_threads(OMP_CORES)
+#pragma omp parallel private(ul,pl,dl,ur,pr,dr,cl,cr,hl,hr,bigU,bigP,bigR,wtime) num_threads(OMP_CORES)
 	{
 		wtime = omp_get_wtime();
 #pragma omp for schedule(dynamic,64) 
@@ -553,14 +557,14 @@ void linear(double dl, double ul, double pl, double dr, double ur, double pr, do
 	{
 		bigP = (ul - ur + pl / (dl*cl) + pr / (dr*cr)) / (hl + hr);
 		bigU = (dl*cl*ul + dr*cr*ur + pl - pr) / (dl*cl + dr*cr);
-	/*	if (bigU >= 0) bigS = pl / pow(dl, GAMMA);
+		if (bigU >= 0) bigS = pl / pow(dl, GAMMA);
 		else bigS = pr / pow(dr, GAMMA);
 		help = bigP / bigS;
-		bigR = pow(help, 1.0 / GAMMA);*/
-		R3 = dl - dl / cl * (bigU - ul);
+		bigR = pow(help, 1.0 / GAMMA);
+	/*	R3 = dl - dl / cl * (bigU - ul);
 		R4 = dr + dr / cr * (bigU - ur);
 		if (bigU > 0) bigR = R3;
-		else bigR = R4;
+		else bigR = R4;*/
 	}
 	
 	u = bigU;
@@ -1700,7 +1704,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, const doub
 
 
 /**************************************************/
-void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, double *U, double* P, double *S_diff)
+void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, double *U, double* P, double *S, double *S_diff)
 {
 	FILE* fout;
 	char FileName[255];
@@ -1711,6 +1715,12 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, d
 	int proverka[N_smooth] = { 0 };
 	double time_control[N_smooth];
 	double k_step = time_max_array[PROBLEM] / N_smooth;
+
+	all_exact_U = new double[numcells];
+	all_exact_R = new double[numcells];
+	all_exact_P = new double[numcells];
+	all_exact_RE = new double[numcells];
+	all_exact_S = new double[numcells];
 
 	for (int i = 0; i < N_smooth; i++)
 	{
@@ -1760,7 +1770,7 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, d
 				us = U[i];
 				ps = P[i];
 				cs = sqrt(GAMMA*P[i] / R[i]);
-				es = P[i] / pow(R[i], GAMMA);
+				es = S[i];
 				es_d = S_diff[i];
 
 #ifdef SW_POINTS_PRINT
@@ -2447,6 +2457,7 @@ void gnuplot_n_smooth2(int numcells, int* sw1_r, int* sw1_u, int* sw1_p,
 			if (PROBLEM == 10) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left[i], right[i]);
 			if (PROBLEM == 5) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_2RR[i], right_2RR[i]);
 			if (PROBLEM == 19) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_19[i], right_19[i]);
+			if (PROBLEM == 7) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_7[i], right_7[i]);
 			if (PROBLEM == 4)
 			{
 #ifdef P4_ONE_WAVE 

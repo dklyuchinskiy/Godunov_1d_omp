@@ -39,7 +39,7 @@ void gnuplot_five_t_steps(int numb);
 void gnuplot_n_smooth_NC(int numb);
 void gnuplot_n_smooth_NC2(int numcells, int* n_r, int* n_u, int* n_p);
 void gnuplot_analitical_riemann(int numcells, double* R, double*U, double*P, double* R_D, double*R_U, double*R_P);
-void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, double *U, double* P, double *S_diff);
+void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, double *U, double* P, double *S, double *S_diff);
 void gnuplot_n_smooth(int numb);
 void gnuplot_n_smooth2(int numcells, int* sw1_r, int* sw1_u, int* sw1_p, int* sw2_r, int* sw2_u, int* sw2_p, int* sw3_r, int* sw3_u, int* sw3_p);
 void gnuplot_n_smooth3(int numcells, int* sw1_r, int* sw1_u, int* sw1_p, int* sw2_r, int* sw2_u, int* sw2_p, int* sw3_r, int* sw3_u, int* sw3_p);

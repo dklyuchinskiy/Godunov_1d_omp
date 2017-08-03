@@ -27,7 +27,7 @@ void iteration(int numb)
 	double *R, *R1, *R2,    // density
 		*P, *P1, *P2,		// pressure
 		*U, *U1, *U2,		// velocity
-		*RS, *S, *S_diff,   // entropy
+	    *S, *S_diff, *S_prev,  // entropy
 		*RU, *RU1, *RU2,    // moment of impulse
 		*RE, *RE1, *RE2;	// total energy
 
@@ -43,7 +43,6 @@ void iteration(int numb)
 
 	double *x_layer, *x_layer_NC, *E;
 
-	double *all_exact_P, *all_exact_U, *all_exact_R, *all_exact_RE, *all_exact_S;
 	double *diff_riem_P, *diff_riem_U, *diff_riem_R, *diff_riem_RE, *diff_riem_S;
 
 	double delta_ro, delta_u, delta_p;
@@ -107,14 +106,9 @@ void iteration(int numb)
 	E = (double*)_mm_malloc(numcells*sizeof(double), 32);
 	RU = (double*)_mm_malloc(numcells*sizeof(double), 32);
 	RE = (double*)_mm_malloc(numcells*sizeof(double), 32);
-	RS = (double*)_mm_malloc(numcells*sizeof(double), 32);
-	S_diff = (double*)_mm_malloc(numcells*sizeof(double), 32);
-	
-	all_exact_U = new double[numcells];
-	all_exact_R = new double[numcells];
-	all_exact_P = new double[numcells];
-	all_exact_RE = new double[numcells];
-	all_exact_S = new double[numcells];
+	S_diff = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	S_prev = (double*)_mm_malloc(numcells * sizeof(double), 32);
+
 	right_parts = new double[numcells];
 
 	diff_riem_P = new double[numcells];
@@ -202,6 +196,7 @@ void iteration(int numb)
 			R[i] = initial_density(x_layer[i]);
 			P[i] = initial_pressure(x_layer[i]);
 			U[i] = initial_velocity(x_layer[i]);
+			S_prev[i] = log(P[i] / pow(R[i], GAMMA));
 		}
 		wtime = omp_get_wtime()- wtime;
 		LOOP_TIME[0][omp_get_thread_num()] += wtime;
@@ -214,6 +209,7 @@ void iteration(int numb)
 	boundary_conditions(numcells, dss, uss, pss, R, U, P, FR, FRU, FRE);
 	
 	/*********************** Boundary conditions ******************************/
+
 	printf("Loop 1\n");
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 	{
@@ -312,7 +308,7 @@ void iteration(int numb)
 #pragma omp parallel firstprivate(u1,u2,u3,u_loc) shared(u_max) num_threads(OMP_CORES)
 		{
 #pragma omp for schedule(static, omp_chunk) nowait
-			for (int i = 0; i < numcells; i++)// not parallel and vectorized: dependences
+			for (int i = 0; i < numcells; i++)
 			{
 				u1 = U[i] + sqrt(GAMMA*P[i] / R[i]);
 				u2 = U[i] - sqrt(GAMMA*P[i] / R[i]);
@@ -373,7 +369,7 @@ void iteration(int numb)
 		{
 			wtime = omp_get_wtime();
 #pragma omp for simd schedule(simd:static) 
-			for (int i = 1; i < numcells; i++)
+			for (int i = 0; i <= numcells; i++)
 			{
 				UFLUX[i] = uss[i];
 				FR[i] = dss[i] * uss[i];
@@ -425,7 +421,9 @@ void iteration(int numb)
 			{
 				U[i] = RU[i] / R[i]; //используется дальше в программе!!!!
 				P[i] = (GAMMA - 1.0) * (RE[i] - 0.5 * RU[i] * U[i]);
-				S[i] = P[i] / pow(R[i], GAMMA);
+				S[i] = log(P[i] / pow(R[i], GAMMA));
+				S_diff[i] = S[i] - S_prev[i];
+				S_prev[i] = S[i];
 			}
 			wtime = omp_get_wtime() - wtime;
 			LOOP_TIME[5][omp_get_thread_num()] += wtime;
@@ -503,7 +501,7 @@ void iteration(int numb)
 		/*************** cчет интегралов по контуру ****************/
 
 #ifdef OUTPUT_N_SMOOTH
-		gnuplot_n_smooth_steps(numcells, timer, tau, R, U, P, S_diff);
+		gnuplot_n_smooth_steps(numcells, timer, tau, R, U, P, S, S_diff);
 #endif
 
 #ifdef FLUX_COUNT
@@ -692,7 +690,6 @@ void iteration(int numb)
 	_mm_free(S);
 	_mm_free(RU);
 	_mm_free(RE);
-	_mm_free(RS);
 
 	fclose(file);
 
@@ -719,9 +716,9 @@ int main()
 #ifdef INTEGRAL
 	run[0:NUM_ITER] = 1;
 #else
-	run[0] = 0;
+	run[0] = 1;
 	run[1] = 1;
-	run[2] = 0;
+	run[2] = 1;
 	run[3] = 0;
 	run[4] = 0;
 	run[5] = 0;
@@ -773,8 +770,6 @@ int main()
 		//	gnuplot_RW_DIFF(nmesh[i]);
 		gnuplot_RW_NUM_ANALITIC(nmesh[i]);
 #endif
-
-
 #endif
 
 #if (PROBLEM==2)
