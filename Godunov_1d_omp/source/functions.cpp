@@ -1731,7 +1731,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, const doub
 
 
 /**************************************************/
-void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, double *U, double* P, double *S, double *S_diff, double *UFLUX)
+void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *S, double *S_diff, double *UFLUX)
 {
 	FILE* fout;
 	char FileName[255];
@@ -1790,12 +1790,6 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, d
 #endif
 #endif
 
-#if (PROBLEM == 18)
-				x = i * dx + 0.5 * dx + timer * UFLUX[i];
-#else
-				x = i*dx + 0.5*dx;
-#endif
-
 			//	x_layer_NC[i] = (i*dx + 0.5*dx - DISC_POINT) / (D_analit*pow(timer, alpha)); //еще один случай
 
 				ds = R[i];
@@ -1844,7 +1838,7 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *R, d
 #endif
 #endif
 
-				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x, ds, us, ps, cs, es, es_d);
+				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, es_d);
 #ifdef NC
 				fprintf(fout_NC, "%9.6lf %lf %lf %lf %lf %lf \n", x_layer_NC[i], ds, us, ps, cs, es);
 #endif

@@ -35,7 +35,7 @@
 //#define SW_POINTS_PRINT
 //#define CFL_SWITCH
 
-#if (PROBLEM < 3)
+#if (PROBLEM < 3 || PROBLEM == 7)
 #define FLUX_COUNT
 #endif
 

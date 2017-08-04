@@ -41,7 +41,7 @@ void iteration(int numb)
 	int i, numcells, start_print, jump_print, left_index, right_index, imesh, k;
 	double	timer, tau, dx, len, x, x_NC, ds = 0, us = 0, ps = 0, es, cs = 0, ss, term, D_num, rp, pg, hh, *uss, *pss, *dss;
 
-	double *x_layer, *x_layer_NC, *E;
+	double *x_init, *x_layer, *x_layer_NC, *E;
 
 	double *diff_riem_P, *diff_riem_U, *diff_riem_R, *diff_riem_RE, *diff_riem_S;
 
@@ -133,6 +133,7 @@ void iteration(int numb)
 	uss = (double*)_mm_malloc((numcells + 1)*sizeof(double), 32);
 	pss = (double*)_mm_malloc((numcells + 1)*sizeof(double), 32);
 	x_layer = (double*)_mm_malloc((numcells)*sizeof(double), 32);
+	x_init = (double*)_mm_malloc((numcells) * sizeof(double), 32);
 
 	double max_x2 = 0;
 	double pg_max = 0;
@@ -292,6 +293,14 @@ void iteration(int numb)
 	}
 #endif
 
+#if (PROBLEM != 18)
+	for (int i = 0; i < numcells; i++)
+	{
+		x_init[i] = i*dx + 0.5*dx;
+		x_layer[i] = x_init[i];
+	}
+#endif
+
 	
 	while (timer < time_max)
 		/************************************* The beggining of iteration*****************************/
@@ -335,7 +344,6 @@ void iteration(int numb)
 		}
 
 		dtdx = tau / dx;
-
 
 		/*********************** Boundary conditions ******************************/
 
@@ -501,8 +509,15 @@ void iteration(int numb)
 		/*************** cчет интегралов по контуру ****************/
 
 #ifdef OUTPUT_N_SMOOTH
-		gnuplot_n_smooth_steps(numcells, timer, tau, R, U, P, S, S_diff, UFLUX);
+#if (PROBLEM == 18)
+		gnuplot_n_smooth_steps(numcells, timer, tau, x_layer, R, U, P, S, S_diff, UFLUX);
+#else
+		gnuplot_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, S, S_diff, UFLUX);
 #endif
+#endif
+		for(int i = 0; i < numcells; i++)
+			x_layer[i] = x_layer[i] + tau * UFLUX[i];
+
 		/************** расчет движения потоков ********************/
 #ifdef FLUX_COUNT
 		flux_count(array_flux, numcells, timer, UFLUX);
