@@ -1729,6 +1729,64 @@ void outline_integral_riemann(int numcells, double timer, double tau, const doub
 	free(xx);
 }
 
+void inf_before_start(int numcells, double *R, double *U, double *P)
+{ 
+#if PROBLEM==0
+	double D_analit = (R[numcells - 1] * U[numcells - 1] - R[0] * U[0]) / (R[numcells - 1] - R[0]);
+	printf("Analitical speed: %10.8lf\n\n", D_analit);
+#elif PROBLEM == 12
+	double uc_left, uc_right;
+
+	//	uc_left = U[0] +0.43 - sqrt(GAMMA*P[0] / R[0]);
+	//uc_right = U[numcells] + 0.43  - sqrt(GAMMA*P[numcells] / R[numcells]);
+	uc_left = U[0] - sqrt(GAMMA*P[0] / R[0]);
+	uc_right = U[numcells - 5] - sqrt(GAMMA*P[numcells - 5] / R[numcells - 5]);
+	printf("U-C left: %8.6lf\nU-C right: %8.6lf\nmiddle: %8.6lf\n", uc_left, uc_right, (uc_left + uc_right) / 2);
+	system("pause");
+
+#elif PROBLEM==2
+	double ro_right = 1.271413930046081;
+	double ro_left = 1.0;
+	double u_right = 0.292868067614595;
+	double u_left = 0;
+
+	double D_analit = (ro_right * u_right - ro_left * u_left) / (ro_right - ro_left);
+	//	printf("Analitical speed: %10.8lf\n\n", D_analit);
+	//	system("pause");
+
+
+#elif (PROBLEM==8 || PROBLEM==4)
+	/*	printf("-----------OLD WAY----------\n");
+	printf("\n--------first sw-------\n");
+	printf("dens: %lf\n", gyugonio(st_P3, st_R3, st_P2));
+	printf("sw speed: %lf\n", sw_speed(st_R3, st_R2, st_U3, st_U2));
+	printf("u after sw: %lf\n", st_U2);
+	printf("\n---------second sw---------\n");
+	printf("dens: %lf\n", gyugonio(st_P2, st_R2, st_P1));
+	printf("sw speed: %lf\n", sw_speed(st_R2, st_R1, st_U2, st_U1));
+
+
+	printf("\n---------summa---------\n");
+	printf("sw speed: %lf\n", sw_speed(st_R3, st_R1, st_U3, st_U1));
+	D_analit = sw_speed(st_R3, st_R1, st_U3, st_U1);*/
+	//D_analit = 3.48;
+
+	printf("---------------NEW WAY-----------\n");
+	printf("\n--------first sw-------\n");
+	//printf("dens after sw: %lf\n", gyugonio(st_P3, st_R3, st_P2));
+	double D_sw1 = sw_speed2(st_R3, st_U3, st_P3, gyugonio(st_P3, st_R3, st_P2), st_P2);
+	printf("sw speed1 without u3: %lf\n", D_sw1);
+	printf("rup after sw1: %lf, %lf, %lf\n", st_R2, st_U2, st_P2);
+	system("pause");
+	printf("\n--------second sw-------\n");
+	//printf("dens after sw: %lf\n", st_R1);
+	double D_sw2 = sw_speed2(st_R2, st_U2, st_P2, st_R1, st_P1);
+	printf("sw speed2 without u3: %lf\n", D_sw2);
+	printf("rup after sw2: %lf, %lf, %lf\n", st_R1, st_U1, st_P1);
+	system("pause");
+#endif
+}
+
 
 /**************************************************/
 void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *S, double *S_diff, double *UFLUX)

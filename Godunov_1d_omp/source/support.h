@@ -47,6 +47,7 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p);
 void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss);
 void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last);
 void flux_count(FILE* *array_flux, int numcells, double timer, double *UFLUX);
+void inf_before_start(int numcells, double *R, double *U, double *P);
 void iteration(int numb);
 void iteration_bound(int numb);
 void first_step_validation(FILE *file, int numcells, int c_c, double timer, double *R, double *U, double *P, double *dss, double *uss, double *pss);

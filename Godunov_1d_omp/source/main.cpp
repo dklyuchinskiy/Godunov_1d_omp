@@ -38,25 +38,25 @@ void iteration(int numb)
 		   *FRUS;   // entropy flux
 	double *UFLUX;	// velocity flux
 
-	int i, numcells, start_print, jump_print, left_index, right_index, imesh, k;
-	double	timer, tau, dx, len, x, x_NC, ds = 0, us = 0, ps = 0, es, cs = 0, ss, term, D_num, rp, pg, hh, *uss, *pss, *dss;
+	double *uss, *pss, *dss; // boundaries
 
-	double *x_init, *x_layer, *x_layer_NC, *E;
+	double *x_init, *x_layer, *x_layer_NC; // coordinates
 
+	int numcells, start_print, jump_print, left_index, right_index, imesh;
+	int iter = 0, count = 0, last = 0;
+
+	double timer, tau, dx, dtdx, len, x, x_NC, wtime;
+	double ds = 0, us = 0, ps = 0, es = 0, es_diff = 0, cs = 0;
+	double l1, r1, l2, r2;
+	
 	double *diff_riem_P, *diff_riem_U, *diff_riem_R, *diff_riem_RE, *diff_riem_S;
-
 	double delta_ro, delta_u, delta_p;
-
-	double* right_parts;
 
 	int* w_num_p, *w_num_r, * w_num_u;
 
 	char FileName[255], FileName2[255], FileName3[255], FileName4[255];
 
-	FILE *fout, *fmesh;
-	FILE *fout2, *fout3, *file;
-	FILE* fout_NC;
-	FILE* fout4;
+	FILE *fout, *fout_NC, *fmesh, *file;
 
 	double sum_m[4][4] = { 0 };
 
@@ -66,7 +66,9 @@ void iteration(int numb)
 
 	double *diff; //память под массив выделяется внутри функции
 
-	double dtdx; // dt / dx
+	double u1 = 0, u2 = 0, u3 = 0, u_loc = 0, u_max = 0;
+
+	double loop_full[LOOPS] = { 0 };
 
 	/* Set number of cells */
 	numcells = nmesh[numb];	//	N = 100 * 3^K = 100 * 3^(NUM_MESH)
@@ -80,6 +82,8 @@ void iteration(int numb)
 								*/
 	int numcells3 = numcells / 3;
 	jump_print = numcells / 100;		//	N / 100
+
+	int omp_chunk = numcells / OMP_CORES;
 
 	/* Boundary */
 	if (PROBLEM == 3)	// periodic
@@ -99,17 +103,18 @@ void iteration(int numb)
 	x_layer_NC = new double[numcells];
 
 	/* Create arrays */
-	R = (double*)_mm_malloc(numcells*sizeof(double),32);
-	P = (double*)_mm_malloc(numcells*sizeof(double), 32);
-	U = (double*)_mm_malloc(numcells*sizeof(double), 32);
-	S = (double*)_mm_malloc(numcells*sizeof(double), 32);
-	E = (double*)_mm_malloc(numcells*sizeof(double), 32);
-	RU = (double*)_mm_malloc(numcells*sizeof(double), 32);
-	RE = (double*)_mm_malloc(numcells*sizeof(double), 32);
+	R = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	P = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	U = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	S = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	RU = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	RE = (double*)_mm_malloc(numcells * sizeof(double), 32);
 	S_diff = (double*)_mm_malloc(numcells * sizeof(double), 32);
 	S_prev = (double*)_mm_malloc(numcells * sizeof(double), 32);
 
-	right_parts = new double[numcells];
+	x_layer = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	x_init = (double*)_mm_malloc(numcells * sizeof(double), 32);
+
 
 	diff_riem_P = new double[numcells];
 	diff_riem_R = new double[numcells];
@@ -117,14 +122,16 @@ void iteration(int numb)
 	diff_riem_RE = new double[numcells];
 	diff_riem_S = new double[numcells];
 
-	w_num_p = new int[N_smooth]; w_num_r = new int[N_smooth]; w_num_u = new int[N_smooth];
+	w_num_p = new int[N_smooth]; 
+	w_num_r = new int[N_smooth];
+	w_num_u = new int[N_smooth];
 
 
 	sw1_num_p = new int[N_smooth]; sw2_num_p = new int[N_smooth]; sw3_num_p = new int[N_smooth];
 	sw1_num_r = new int[N_smooth]; sw2_num_r = new int[N_smooth]; sw3_num_r = new int[N_smooth];
 	sw1_num_u = new int[N_smooth]; sw2_num_u = new int[N_smooth]; sw3_num_u = new int[N_smooth];
 
-	FR = (double*)_mm_malloc((numcells+1)*sizeof(double), 32);
+	FR = (double*)_mm_malloc((numcells + 1)*sizeof(double), 32);
 	FRU = (double*)_mm_malloc((numcells + 1)*sizeof(double), 32);
 	FRP = (double*)_mm_malloc((numcells + 1)*sizeof(double), 32);
 	FRE = (double*)_mm_malloc((numcells + 1)*sizeof(double), 32);
@@ -132,23 +139,7 @@ void iteration(int numb)
 	dss = (double*)_mm_malloc((numcells + 1)*sizeof(double), 32);
 	uss = (double*)_mm_malloc((numcells + 1)*sizeof(double), 32);
 	pss = (double*)_mm_malloc((numcells + 1)*sizeof(double), 32);
-	x_layer = (double*)_mm_malloc((numcells)*sizeof(double), 32);
-	x_init = (double*)_mm_malloc((numcells) * sizeof(double), 32);
-
-	double max_x2 = 0;
-	double pg_max = 0;
-
-	double es_diff;
-
-	double D_analit = 0;
-
-	double l1, r1, l2, r2;
-
-	int omp_chunk = numcells / OMP_CORES;
-
-	w_num_p[0:N_smooth] = 0; w_num_r[0:N_smooth] = 0;  w_num_u[0:N_smooth] = 0;
-
-	int count2 = 0;
+	
 
 	w_num_p[0:N_smooth] = 0;
 	w_num_r[0:N_smooth] = 0;
@@ -166,15 +157,6 @@ void iteration(int numb)
 	sw2_num_r[0:N_smooth] = 0;
 	sw3_num_r[0:N_smooth] = 0;
 
-	int c_c = 0;
-
-	double wtime;
-
-	double u1 = 0, u2 = 0, u3 = 0, u_loc = 0, u_max = 0;
-
-	double loop_full[LOOPS] = { 0 };
-
-	/*********************************THE PROGRAM BELOW******************************/
 	sprintf(FileName2,"first step analysis_%c.dat", TYPE);
 	file = fopen(FileName2,"w");
 
@@ -219,61 +201,7 @@ void iteration(int numb)
 		printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[1][omp_get_thread_num()]);
 	}
 
-
-#if PROBLEM==0
-	D_analit = (R[numcells - 1] * U[numcells - 1] - R[0] * U[0]) / (R[numcells - 1] - R[0]);
-	printf("Analitical speed: %10.8lf\n\n", D_analit);
-#elif PROBLEM == 12
-	double uc_left, uc_right;
-	
-//	uc_left = U[0] +0.43 - sqrt(GAMMA*P[0] / R[0]);
-	//uc_right = U[numcells] + 0.43  - sqrt(GAMMA*P[numcells] / R[numcells]);
-    uc_left = U[0] - sqrt(GAMMA*P[0] / R[0]);
-	uc_right = U[numcells-5]  - sqrt(GAMMA*P[numcells-5] / R[numcells-5]);
-	printf("U-C left: %8.6lf\nU-C right: %8.6lf\nmiddle: %8.6lf\n",uc_left,uc_right, (uc_left+uc_right)/2);
-	system("pause");
-
-#elif PROBLEM==2
-	double ro_right = 1.271413930046081;
-	double ro_left = 1.0;
-	double u_right = 0.292868067614595;
-	double u_left = 0;
-
-	D_analit = (ro_right * u_right - ro_left * u_left) / (ro_right - ro_left);
-//	printf("Analitical speed: %10.8lf\n\n", D_analit);
-//	system("pause");
-
-	
-#elif (PROBLEM==8 || PROBLEM==4)
-/*	printf("-----------OLD WAY----------\n");
-	printf("\n--------first sw-------\n");
-	printf("dens: %lf\n", gyugonio(st_P3, st_R3, st_P2));
-	printf("sw speed: %lf\n", sw_speed(st_R3, st_R2, st_U3, st_U2));
-	printf("u after sw: %lf\n", st_U2);
-	printf("\n---------second sw---------\n");
-	printf("dens: %lf\n", gyugonio(st_P2, st_R2, st_P1));
-	printf("sw speed: %lf\n", sw_speed(st_R2, st_R1, st_U2, st_U1));
-	
-
-	printf("\n---------summa---------\n");
-	printf("sw speed: %lf\n", sw_speed(st_R3, st_R1, st_U3, st_U1));
-	D_analit = sw_speed(st_R3, st_R1, st_U3, st_U1);*/
-	//D_analit = 3.48;
-
-	printf("---------------NEW WAY-----------\n");
-	printf("\n--------first sw-------\n");
-	//printf("dens after sw: %lf\n", gyugonio(st_P3, st_R3, st_P2));
-	double D_sw1 = sw_speed2(st_R3, st_U3, st_P3, gyugonio(st_P3, st_R3, st_P2), st_P2);
-	printf("sw speed1 without u3: %lf\n", D_sw1);
-	printf("rup after sw1: %lf, %lf, %lf\n", st_R2, st_U2, st_P2);
-	system("pause");
-	printf("\n--------second sw-------\n");
-	//printf("dens after sw: %lf\n", st_R1);
-	double D_sw2 = sw_speed2(st_R2, st_U2, st_P2, st_R1, st_P1);
-	printf("sw speed2 without u3: %lf\n", D_sw2);
-	printf("rup after sw2: %lf, %lf, %lf\n", st_R1, st_U1, st_P1);
-	system("pause");
-#endif
+	inf_before_start(numcells, R, U, P);
 
 	timer = 0.0;
 
@@ -281,8 +209,6 @@ void iteration(int numb)
 
 
 	/***** Вычислительный цикл метода Годунова *****/
-
-	int last = 0;
 
 #ifdef FLUX_COUNT
 	FILE* array_flux[N_bound];
@@ -305,7 +231,7 @@ void iteration(int numb)
 	while (timer < time_max)
 		/************************************* The beggining of iteration*****************************/
 	{
-		c_c++;
+		iter++;
 
 #pragma omp parallel firstprivate(u1,u2,u3,u_loc) shared(u_max) num_threads(OMP_CORES)
 		{
@@ -472,8 +398,9 @@ void iteration(int numb)
 #endif
 
 		//************ CURRENT DOMAIN **********************//
-
-		//analitical_riemann_modeling(numcells, initial_density(0.1), initial_velocity(0.1), initial_pressure(0.1), initial_density(0.9), initial_velocity(0.9), initial_pressure(0.9), timer, all_exact_R, all_exact_U, all_exact_P);
+#if (PROBLEM == 2)
+	
+		analitical_riemann_modeling(numcells, initial_density(0.1), initial_velocity(0.1), initial_pressure(0.1), initial_density(0.9), initial_velocity(0.9), initial_pressure(0.9), timer, all_exact_R, all_exact_U, all_exact_P);
 
 #ifdef DIFF_ANALIT_RIEMANN
 		for (int i = 0; i < numcells; i++)
@@ -488,12 +415,13 @@ void iteration(int numb)
 		diff_riem_RE[0:numcells] = RE[0:numcells] - all_exact_RE[0:numcells];
 		diff_riem_S[0:numcells] = S[0:numcells] - all_exact_S[0:numcells];
 #endif
+#endif
 		timer += tau;
 
 #ifdef DEBUG
-		if (c_c <= 2)
+		if (iter <= 2)
 		{
-			first_step_validation(file, numcells, c_c, timer, R, U, P, dss, uss, pss);
+			first_step_validation(file, numcells, iter, timer, R, U, P, dss, uss, pss);
 		}
 #endif
 
@@ -717,33 +645,20 @@ int main()
 
 	int i = 0;
 	int run[NUM_ITER];
+
 #ifdef INTEGRAL
 	run[0:NUM_ITER] = 1;
 #else
-	run[0] = 1;
-	run[1] = 1;
-	run[2] = 1;
-	run[3] = 0;
+	run[0] = 0;
+	run[1] = 0;
+	run[2] = 0;
+	run[3] = 1;
 	run[4] = 0;
 	run[5] = 0;
 	run[6] = 0;
 #endif
 
 #if 1
-	
-#ifdef NC
-	NC;
-#endif
-
-#ifdef FIRST
-	FIRST;
-#else
-	SECOND;
-#endif
-
-#ifdef PRINT
-	PRINT;
-#endif
 
 	start = clock(); // start of program's work
 	for (i = 0; i < NUM_ITER; i++) // Iterations   //there is dependence between iterations!!! its impossible to start new iteration before last ends
