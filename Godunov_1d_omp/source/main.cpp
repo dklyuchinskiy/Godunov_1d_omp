@@ -40,6 +40,9 @@ void iteration(int numb)
 
 	double *uss, *pss, *dss; // boundaries
 
+	double *exact_R, *exact_U, *exact_P, *exact_RE, *exact_S; // exact values
+	double *diff_R, *diff_U, *diff_P, *diff_RE, *diff_S; // diff of analyt and numerical functions
+
 	double *x_init, *x_layer, *x_layer_NC; // coordinates
 
 	int numcells, start_print, jump_print, left_index, right_index, imesh;
@@ -49,7 +52,6 @@ void iteration(int numb)
 	double ds = 0, us = 0, ps = 0, es = 0, es_diff = 0, cs = 0;
 	double l1, r1, l2, r2;
 	
-	double *diff_riem_P, *diff_riem_U, *diff_riem_R, *diff_riem_RE, *diff_riem_S;
 	double delta_ro, delta_u, delta_p;
 
 	int* w_num_p, *w_num_r, * w_num_u;
@@ -115,12 +117,17 @@ void iteration(int numb)
 	x_layer = (double*)_mm_malloc(numcells * sizeof(double), 32);
 	x_init = (double*)_mm_malloc(numcells * sizeof(double), 32);
 
+	exact_R = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	exact_P = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	exact_U = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	exact_S = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	exact_RE = (double*)_mm_malloc(numcells * sizeof(double), 32);
 
-	diff_riem_P = new double[numcells];
-	diff_riem_R = new double[numcells];
-	diff_riem_U = new double[numcells];
-	diff_riem_RE = new double[numcells];
-	diff_riem_S = new double[numcells];
+	diff_R = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	diff_P = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	diff_U = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	diff_S = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	diff_RE = (double*)_mm_malloc(numcells * sizeof(double), 32);
 
 	w_num_p = new int[N_smooth]; 
 	w_num_r = new int[N_smooth];
@@ -156,6 +163,8 @@ void iteration(int numb)
 	sw1_num_r[0:N_smooth] = 0;
 	sw2_num_r[0:N_smooth] = 0;
 	sw3_num_r[0:N_smooth] = 0;
+
+	double t_flux[N_bound] = { 0 };
 
 	sprintf(FileName2,"first step analysis_%c.dat", TYPE);
 	file = fopen(FileName2,"w");
@@ -366,20 +375,11 @@ void iteration(int numb)
 		loop_full[5] += (double)(clock() - loop_time) / CLOCKS_PER_SEC;
 		if (last) printf("Full time loop: %lf\n", loop_full[5]);
 
-#if PROBLEM==0
-
-		/*******************difference analit and numeric solutions************/
-		/**********************shock wave*************************************/
-
-		/*	analitical_SW(numcells, initial_pressure(0.05), initial_density(0.05), initial_velocity(0.05), initial_pressure(0.2), initial_density(0.2), initial_velocity(0.2), shw_analit_p, shw_analit_u, shw_analit_d, timer);
-		for (int j = 0; j < numcells; j++)
-		{
-		shw_diff_p[j] = P[j] - shw_analit_p[j];
-		shw_diff_u[j] = U[j] - shw_analit_u[j];
-		shw_diff_d[j] = R[j] - shw_analit_d[j];
-		}*/
+#if (PROBLEM==0)
+#ifdef DIFF_ANALYT
+		difference_SW(inumcells, timer, R, U, P, diff_R, diff_U, diff_P, exact_R, exact_U, exact_P)
 #endif
-
+#endif
 		//************ CURRENT DOMAIN **********************//
 
 	
@@ -398,23 +398,7 @@ void iteration(int numb)
 #endif
 
 		//************ CURRENT DOMAIN **********************//
-#if (PROBLEM == 2)
-	//	analitical_riemann_modeling(numcells, initial_density(0.1), initial_velocity(0.1), initial_pressure(0.1), initial_density(0.9), initial_velocity(0.9), initial_pressure(0.9), timer, all_exact_R, all_exact_U, all_exact_P);
 
-#ifdef DIFF_ANALIT_RIEMANN
-		for (int i = 0; i < numcells; i++)
-		{
-			all_exact_RE[i] = (all_exact_P[i] / (GAMMA - 1.0) + 0.5*all_exact_R[i] * all_exact_U[i] * all_exact_U[i])*all_exact_U[i] + all_exact_P[i] * all_exact_U[i];
-			all_exact_S[i] = all_exact_P[i] / pow(all_exact_R[i], GAMMA);
-		}
-
-		diff_riem_R[0:numcells] = R[0:numcells] - all_exact_R[0:numcells];
-		diff_riem_U[0:numcells] = U[0:numcells] - all_exact_U[0:numcells];
-		diff_riem_P[0:numcells] = P[0:numcells] - all_exact_P[0:numcells];
-		diff_riem_RE[0:numcells] = RE[0:numcells] - all_exact_RE[0:numcells];
-		diff_riem_S[0:numcells] = S[0:numcells] - all_exact_S[0:numcells];
-#endif
-#endif
 		timer += tau;
 
 #ifdef DEBUG
@@ -429,7 +413,7 @@ void iteration(int numb)
 #ifndef DIFF_ANALIT_RIEMANN
 		outline_integral_riemann(numcells, timer, tau, tt1, tt2, xx1, xx2, R, U, P, RE, S, sum_m); //numerical solution on timer with new P U R 
 #else
-		outline_integral_riemann(numcells, timer, tau, tt1, tt2, xx1, xx2, diff_riem_R, diff_riem_U, diff_riem_P, diff_riem_RE, diff_riem_S, sum_m); //difference num and exact
+		outline_integral_riemann(numcells, timer, tau, tt1, tt2, xx1, xx2, diff_R, diff_U, diff_P, diff_RE, diff_S, sum_m); //difference num and exact
 #endif
 #endif
 
@@ -437,9 +421,9 @@ void iteration(int numb)
 
 #ifdef OUTPUT_N_SMOOTH
 #if (PROBLEM == 18)
-		gnuplot_n_smooth_steps(numcells, timer, tau, x_layer, R, U, P, S, S_diff, UFLUX);
+		gnuplot_n_smooth_steps(numcells, timer, tau, x_layer, R, U, P, RE, S, S_diff, UFLUX);
 #else
-		gnuplot_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, S, S_diff, UFLUX);
+		gnuplot_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, UFLUX);
 #endif
 #endif
 		for(int i = 0; i < numcells; i++)
@@ -447,7 +431,7 @@ void iteration(int numb)
 
 		/************** расчет движения потоков ********************/
 #ifdef FLUX_COUNT
-		flux_count(array_flux, numcells, timer, UFLUX);
+		flux_count(array_flux, iter, numcells, timer, tau, t_flux, UFLUX);
 #endif
 
 	} /******************************************* The end of iteration**************************/
@@ -501,30 +485,25 @@ void iteration(int numb)
 
 
 /*#if(PROBLEM==2)
-	analitical_riemann_modeling(numcells, initial_density(0.0), initial_velocity(0.0), initial_pressure(0.0), initial_density(0.9), initial_velocity(0.9), initial_pressure(0.9), time_max_array[PROBLEM], all_exact_R, all_exact_U, all_exact_P);
+	analitical_riemann_modeling(numcells, initial_density(0.0), initial_velocity(0.0), initial_pressure(0.0), initial_density(0.9), initial_velocity(0.9), initial_pressure(0.9), time_max_array[PROBLEM], exact_R, exact_U, exact_P);
 #ifdef PRINT	
-	gnuplot_analitical_riemann(numcells, R, U, P, all_exact_R, all_exact_U, all_exact_P);
+	gnuplot_analitical_riemann(numcells, R, U, P, exact_R, exact_U, exact_P);
 #endif
 #endif*/
 
 	/*********Итог счета интегралов по контуру**********/
 #ifdef DIFF_ANALIT_RIEMANN
 #ifdef L1-NORM
-	difference_analitical_riemann_Linf(numb, R, U, P, all_exact_R, all_exact_U, all_exact_P, delta_ro, delta_u, delta_p);
+	difference_analitical_riemann_Linf(numb, R, U, P, exact_R, exact_U, exact_P, delta_ro, delta_u, delta_p);
 	delta_D[numb] = delta_ro;
 	delta_U[numb] = delta_u;
 	delta_P[numb] = delta_p;
 	
-	difference_analitical_riemann_L1(numb, R, U, P, all_exact_R, all_exact_U, all_exact_P, delta_ro, delta_u, delta_p);
+	difference_analitical_riemann_L1(numb, R, U, P, exact_R, exact_U, exact_P, delta_ro, delta_u, delta_p);
 	l1_D[numb] = delta_ro;
 	l1_U[numb] = delta_u;
 	l1_P[numb] = delta_p;
 
-	free(all_exact_U);
-	free(all_exact_R);
-	free(all_exact_P);
-	free(all_exact_RE);
-	free(all_exact_S);
 #endif
 #endif
 
@@ -616,6 +595,12 @@ void iteration(int numb)
 	_mm_free(S);
 	_mm_free(RU);
 	_mm_free(RE);
+
+	_mm_free(exact_U);
+	_mm_free(exact_R);
+	_mm_free(exact_P);
+	_mm_free(exact_RE);
+	_mm_free(exact_S);
 
 	fclose(file);
 

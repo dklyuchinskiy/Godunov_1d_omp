@@ -17,9 +17,6 @@ g7 = (GAMMA - 1.0) / 2.0,
 g8 = GAMMA - 1.0;
 
 
-double *all_exact_P, *all_exact_U, *all_exact_R, *all_exact_RE, *all_exact_S;
-
-
 /**************************************************/
 
 #ifdef SW_POINTS_PRINT
@@ -465,9 +462,8 @@ void boundary_conditions(int numcells, double *dss, double *uss, double *pss, do
 #endif
 }
 
-void flux_count(FILE* *array_flux, int numcells, double timer, double *UFLUX)
+void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double tau, double *t, double *UFLUX)
 {
-	double t[N_bound] = { 0 };
 	int t_ind[N_bound] = { 0 };
 	int numcells_flux;
 	numcells_flux = numcells;
@@ -477,10 +473,23 @@ void flux_count(FILE* *array_flux, int numcells, double timer, double *UFLUX)
 	for (int i = 0; i < N_bound; i++)
 	{
 		t_ind[i] = i * numcells_flux / N_bound;
-		t[i] = (t_ind[i] + 0.5)*dx - UFLUX[t_ind[i]] * timer;
-
-		fprintf(array_flux[i], "%lf %lf %lf\n", t[i], timer, UFLUX[t_ind[i]]);
 	}
+
+	if (iter == 1)
+	{
+		for (int i = 0; i < N_bound; i++)
+			t[i] = (t_ind[i] + 0.5)*dx;
+	}
+	else
+	{
+		for (int i = 0; i < N_bound; i++)
+		{
+			t[i] = t[i] + UFLUX[t_ind[i]] * tau;
+
+			fprintf(array_flux[i], "%lf %lf %lf\n", t[i], timer, UFLUX[t_ind[i]]);
+		}
+	}
+		//t[i] = (t_ind[i] + 0.5)*dx - UFLUX[t_ind[i]] * timer;
 }
 
 void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last)
@@ -912,6 +921,24 @@ double initial_velocity(double x)
 			else return st_U3;
 	}
 	return 0;
+}
+
+void difference_SW(int numcells, double timer, double *R, double *U, double *P, 
+	                          double *shw_diff_d, double *shw_diff_u, double *shw_diff_p, 
+	                          double *shw_analit_d, double *shw_analit_u, double *shw_analit_p)
+{
+	/*******************difference analit and numeric solutions************/
+	/**********************shock wave*************************************/
+
+	analitical_SW(numcells, initial_pressure(0.05), initial_density(0.05), initial_velocity(0.05),
+		                    initial_pressure(0.2), initial_density(0.2), initial_velocity(0.2),
+		                    shw_analit_p, shw_analit_u, shw_analit_d, timer);
+	for (int j = 0; j < numcells; j++)
+	{
+	shw_diff_p[j] = P[j] - shw_analit_p[j];
+	shw_diff_u[j] = U[j] - shw_analit_u[j];
+	shw_diff_d[j] = R[j] - shw_analit_d[j];
+	}
 }
 
 void analitical_RW(FILE* file_name, double ip_l, double id_l, double iu_l,
@@ -1793,7 +1820,8 @@ void inf_before_start(int numcells, double *R, double *U, double *P)
 
 
 /**************************************************/
-void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *S, double *S_diff, double *UFLUX)
+void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_layer,
+						   double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *UFLUX)
 {
 	FILE* fout, *fout_NC;
 	char FileName[255], FileName2[255];
@@ -1802,15 +1830,24 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_la
 	double ps, us, ds, cs, es, es_d;
 	double D_analit = 1.371913;
 
+	static double *exact_R, *exact_U, *exact_P, *exact_RE, *exact_S;
+	static double *diff_R, *diff_U, *diff_P, *diff_RE, *diff_S;
+
+	exact_R = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	exact_P = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	exact_U = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	exact_S = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	exact_RE = (double*)_mm_malloc(numcells * sizeof(double), 32);
+
+	diff_R = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	diff_P = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	diff_U = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	diff_S = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	diff_RE = (double*)_mm_malloc(numcells * sizeof(double), 32);
+
 	int proverka[N_smooth] = { 0 };
 	double time_control[N_smooth];
 	double k_step = time_max_array[PROBLEM] / N_smooth;
-
-	all_exact_U = new double[numcells];
-	all_exact_R = new double[numcells];
-	all_exact_P = new double[numcells];
-	all_exact_RE = new double[numcells];
-	all_exact_S = new double[numcells];
 
 	for (int i = 0; i < N_smooth; i++)
 	{
@@ -1914,9 +1951,27 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_la
 			fclose(fout_NC);
 
 #endif
+#ifdef DIFF_ANALYT
 #if(PROBLEM==2 || PROBLEM==9)
-			analitical_riemann_modeling(numcells, initial_density(0.05), initial_velocity(0.05), initial_pressure(0.05), initial_density(0.95), initial_velocity(0.95), initial_pressure(0.95), timer, all_exact_R, all_exact_U, all_exact_P);
-			analitical_writing_into_file(numcells, all_exact_R, all_exact_U, all_exact_P, time_control[k]);
+			analitical_riemann_modeling(numcells, initial_density(0.05), initial_velocity(0.05), initial_pressure(0.05), initial_density(0.95), initial_velocity(0.95), initial_pressure(0.95), timer, exact_R, exact_U, exact_P);
+#elif (PROBLEM==0)
+			//analitical_SW();
+#endif
+
+#pragma omp parallel for simd schedule(simd:static)
+			for (int i = 0; i < numcells; i++)
+			{
+				exact_RE[i] = (exact_P[i] / (GAMMA - 1.0) + 0.5*exact_R[i] * exact_U[i] * exact_U[i])*exact_U[i] + exact_P[i] * exact_U[i];
+				exact_S[i] = log(exact_P[i] / pow(exact_R[i], GAMMA));
+
+				diff_R[i] = R[i] - exact_R[i];
+				diff_U[i] = U[i] - exact_U[i];
+				diff_P[i] = P[i] - exact_P[i];
+				diff_RE[i] = RE[i] - exact_RE[i];
+				diff_S[i] = S[i] - exact_S[i];
+			}
+
+			file_exact_diff(numcells, exact_R, exact_U, exact_P, exact_RE, exact_S, diff_R, diff_U, diff_P, time_control[k]);
 #endif
 			proverka[k] = 1;
 
@@ -2768,6 +2823,10 @@ void analitical_writing_into_file(int numcells, double* R_D, double*R_U, double*
 #endif
 	}
 	fclose(fout);
+}
+
+void file_exact_diff(int numcells, double *exact_R, double *exact_U, double *exact_P, double *exact_RE, double *exact_S, double *diff_R, double *diff_U, double *diff_P, double time)
+{
 }
 
 void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)

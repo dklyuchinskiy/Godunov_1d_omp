@@ -34,6 +34,7 @@
 //#define ENTROPY_CHECK
 //#define SW_POINTS_PRINT
 //#define CFL_SWITCH
+//#define DIFF_ANALYT
 
 #if (PROBLEM < 3 || PROBLEM == 7)
 #define FLUX_COUNT
