@@ -60,7 +60,7 @@
 #define OMP_CORES 4
 #define LOOPS 6
 
-#define PROBLEM		0
+#define PROBLEM		2
 /*
 0 - shock wave
 1 - rarify wave

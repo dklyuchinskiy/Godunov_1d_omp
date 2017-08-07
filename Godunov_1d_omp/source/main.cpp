@@ -208,7 +208,7 @@ void iteration(int numb)
 	time_max = time_max_array[PROBLEM];
 
 
-	/***** Вычислительный цикл метода Годунова *****/
+	/***** Computational loop *****/
 
 #ifdef FLUX_COUNT
 	FILE* array_flux[N_bound];
@@ -399,8 +399,7 @@ void iteration(int numb)
 
 		//************ CURRENT DOMAIN **********************//
 #if (PROBLEM == 2)
-	
-		analitical_riemann_modeling(numcells, initial_density(0.1), initial_velocity(0.1), initial_pressure(0.1), initial_density(0.9), initial_velocity(0.9), initial_pressure(0.9), timer, all_exact_R, all_exact_U, all_exact_P);
+	//	analitical_riemann_modeling(numcells, initial_density(0.1), initial_velocity(0.1), initial_pressure(0.1), initial_density(0.9), initial_velocity(0.9), initial_pressure(0.9), timer, all_exact_R, all_exact_U, all_exact_P);
 
 #ifdef DIFF_ANALIT_RIEMANN
 		for (int i = 0; i < numcells; i++)
@@ -547,7 +546,7 @@ void iteration(int numb)
 	printf("Iteration %d time: %lf\n", numb, duration);
 	ITER_TIME[numb] = duration;
 
-	//  ВЫВОД!!!
+
 #ifndef OUTPUT_N_SMOOTH
 #ifndef RP
 	sprintf(FileName, "N%04d_P%1d_SLV%1d_TERM%.0lf.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
@@ -556,11 +555,6 @@ void iteration(int numb)
 	sprintf(FileName, "RP_N%04d_P%1d_SLV%1d_TERM%.0lf.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
 	fout = fopen(FileName, "w");
 #endif
-
-
-	//system("pause");
-	/*******************OUTPUT***************************************/
-
 
 
 #ifdef FIRST
@@ -649,9 +643,9 @@ int main()
 #ifdef INTEGRAL
 	run[0:NUM_ITER] = 1;
 #else
-	run[0] = 0;
-	run[1] = 0;
-	run[2] = 0;
+	run[0] = 1;
+	run[1] = 1;
+	run[2] = 1;
 	run[3] = 1;
 	run[4] = 0;
 	run[5] = 0;

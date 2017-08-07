@@ -415,8 +415,11 @@ void boundary_conditions(int numcells, double *dss, double *uss, double *pss, do
 	s0 = P[0] / pow(R[0], GAMMA);
 	//	sn = P[numcells] / pow(R[numcells], GAMMA);
 
-	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+	//dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
 	//	dss[numcells] = pow(pss[numcells] / sn, 1.0 / GAMMA);
+
+	//R3 = dl - dl / cl * (bigU - ul);
+	dss[0] = R[0] + R[0] / c0 * (uss[0] - U[0]);
 
 	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
 
@@ -474,7 +477,8 @@ void flux_count(FILE* *array_flux, int numcells, double timer, double *UFLUX)
 	for (int i = 0; i < N_bound; i++)
 	{
 		t_ind[i] = i * numcells_flux / N_bound;
-		t[i] = (t_ind[i] + 0.5)*dx + UFLUX[t_ind[i]] * timer;
+		t[i] = (t_ind[i] + 0.5)*dx - UFLUX[t_ind[i]] * timer;
+
 		fprintf(array_flux[i], "%lf %lf %lf\n", t[i], timer, UFLUX[t_ind[i]]);
 	}
 }
@@ -1118,7 +1122,7 @@ void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P)
 	double c, l0, A, tt;
 	double q1, q2, q3, q4, q5, q6, q7, q8, q11;
 	double iu_l, id_l, ip_l, iu_r, id_r, ip_r;
-	double x, xl, xr;
+	double x, x_NC, xl, xr;
 	int check1 = 0, check2 = 0;
 
 	double dx = LENGTH / double(numcells);
@@ -1791,11 +1795,12 @@ void inf_before_start(int numcells, double *R, double *U, double *P)
 /**************************************************/
 void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *S, double *S_diff, double *UFLUX)
 {
-	FILE* fout;
-	char FileName[255];
+	FILE* fout, *fout_NC;
+	char FileName[255], FileName2[255];
 	double x;
 	double dx = LENGTH / double(numcells);
 	double ps, us, ds, cs, es, es_d;
+	double D_analit = 1.371913;
 
 	int proverka[N_smooth] = { 0 };
 	double time_control[N_smooth];
@@ -1843,7 +1848,7 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_la
 #ifdef NC2
 				x_layer_NC[i] = (i*dx + 0.5*dx - DISC_POINT - D_analit*timer) / dx;
 #else
-				x_layer_NC[i] = (i*dx + 0.5*dx - DISC_POINT - D_analit*timer);
+				x = (i*dx + 0.5*dx - DISC_POINT - D_analit*timer);
 				//	x_layer_NC[i] = (i*dx + 0.5*dx - 0.43*timer);
 #endif
 #endif
@@ -1898,7 +1903,7 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_la
 
 				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, es_d);
 #ifdef NC
-				fprintf(fout_NC, "%9.6lf %lf %lf %lf %lf %lf \n", x_layer_NC[i], ds, us, ps, cs, es);
+				fprintf(fout_NC, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x, ds, us, ps, cs, es , es_d);
 #endif
 
 			}
@@ -2529,7 +2534,7 @@ void gnuplot_n_smooth2(int numcells, int* sw1_r, int* sw1_u, int* sw1_p,
 			fprintf(plot, "set xrange[0.0:%f]\n\n", LENGTH); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
 			fprintf(plot, "set xlabel \"x\"\n");
 
-			if (PROBLEM == 0) fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", left_SW[i], right_SW[i]);
+			if (PROBLEM == 0 || PROBLEM == 18) fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", left_SW[i], right_SW[i]);
 			//if (PROBLEM == 1) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW[i], right_RW[i]);
 
 			if (PROBLEM == 2 || PROBLEM==17)
