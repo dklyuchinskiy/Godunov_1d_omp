@@ -34,16 +34,18 @@ int nmesh[10] = { 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200};
 int nprnt[10] = { 0, 1, 4, 13, 40, 121, 364, 1093, 3280 };
 
 char prop[6] = { 'R', 'U', 'P', 'C', 'S', 'D' };
-// D - diff in entropy
-// Q- right parts, W - only (dp/dx)^(2k)
+
 float left_SW[6] = { 0.9f, -0.1f, 0.9f, 1.1f, -0.001f, -0.0001f };
 float right_SW[6] = { 1.35f, 0.35f, 1.5f, 1.3f, 0.008f, 0.0002f };
 
 float left_19[6] = { 0.9f, -0.1f, 0.9f, 1.1f, 0.998f, -0.0001f };
 float right_19[6] = { 15.f, 5.0f, 15.f, 1.3f, 1.005f, 0.0001f };
 
-float left_7[6] = { 0.3f, -1.0f, 0.2f, 1.1f, 0.0f, 0.0f };
-float right_7[6] = { 1.0f, 1.0f, 1.0f, 1.3f, 0.25f, 0.001f };
+//float left_7[6] = { 0.3f, -1.0f, 0.2f, 1.1f, 0.0f, 0.0f };
+//float right_7[6] = { 1.0f, 1.0f, 1.0f, 1.3f, 0.25f, 0.001f };
+
+float left_7[6] = { 0.2f, -1.0f, 0.2f, 1.1f, 0.0f, 0.0f };
+float right_7[6] = { 2.1f, 1.0f, 1.0f, 1.3f, 0.25f, 0.001f };
 
 float left_SW_cs[6] = { 0.9f, -1.1f, 0.9f, 1.1f, 0.998f, 0.0f };
 float right_SW_cs[6] = { 1.35f, 1.1f, 1.5f, 1.3f, 1.005f, 0.0000005f };
@@ -409,8 +411,8 @@ void boundary_conditions(int numcells, double *dss, double *uss, double *pss, do
 	uss[0] = l0_const + pss[0] / (R[0] * c0);
 	//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * cn);
 
-	s0 = P[0] / pow(R[0], GAMMA);
-	//	sn = P[numcells] / pow(R[numcells], GAMMA);
+	s0 = log(P[0] / pow(R[0], GAMMA));
+	//	sn = log(P[numcells] / pow(R[numcells], GAMMA));
 
 	//dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
 	//	dss[numcells] = pow(pss[numcells] / sn, 1.0 / GAMMA);
@@ -430,7 +432,7 @@ void boundary_conditions(int numcells, double *dss, double *uss, double *pss, do
 
 	pss[0] = (uss[0] - l0_const)*(R[0] * c0);
 
-	s0 = P[0] / pow(R[0], GAMMA);
+	s0 = log(P[0] / pow(R[0], GAMMA));
 	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
 
 #elif (PROBLEM == 4)
@@ -447,8 +449,8 @@ void boundary_conditions(int numcells, double *dss, double *uss, double *pss, do
 	uss[0] = l0_const + pss[0] / (R[0] * c0);
 	//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * cn);
 
-	s0 = P[0] / pow(R[0], GAMMA);
-	//	sn = P[numcells] / pow(R[numcells], GAMMA);
+	s0 = log(P[0] / pow(R[0], GAMMA));
+	//	sn = log(P[numcells] / pow(R[numcells], GAMMA));
 
 	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
 	//	dss[numcells] = pow(pss[numcells] / S[numcells], 1.0 / GAMMA);
@@ -484,7 +486,8 @@ void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double 
 	{
 		for (int i = 0; i < N_bound; i++)
 		{
-			t[i] = t[i] + UFLUX[t_ind[i]] * tau;
+			//t[i] = t[i] + UFLUX[t_ind[i]] * tau;
+			t[i] = t[i];
 
 			fprintf(array_flux[i], "%lf %lf %lf\n", t[i], timer, UFLUX[t_ind[i]]);
 		}
@@ -546,10 +549,7 @@ void linear_solver(int numcells, double* R, double* U, double* P, double* dss, d
 			{
 				bigP = (ul - ur + pl / (dl*cl) + pr / (dr*cr)) / (hl + hr);
 				bigU = (dl*cl*ul + dr*cr*ur + pl - pr) / (dl*cl + dr*cr);
-	/*			if (bigU >= 0) bigS = pl / pow(dl, GAMMA);
-				else bigS = pr / pow(dr, GAMMA);
-				help = bigP / bigS;
-				bigR = pow(help, 1.0 / GAMMA);*/
+
 				R3 = dl - dl / cl * (bigU - ul);
 				R4 = dr + dr / cr * (bigU - ur);
 				if (bigU > 0) bigR = R3;
@@ -597,14 +597,14 @@ void linear(double dl, double ul, double pl, double dr, double ur, double pr, do
 	{
 		bigP = (ul - ur + pl / (dl*cl) + pr / (dr*cr)) / (hl + hr);
 		bigU = (dl*cl*ul + dr*cr*ur + pl - pr) / (dl*cl + dr*cr);
-		if (bigU >= 0) bigS = pl / pow(dl, GAMMA);
+	/*	if (bigU >= 0) bigS = pl / pow(dl, GAMMA);
 		else bigS = pr / pow(dr, GAMMA);
 		help = bigP / bigS;
-		bigR = pow(help, 1.0 / GAMMA);
-	/*	R3 = dl - dl / cl * (bigU - ul);
+		bigR = pow(help, 1.0 / GAMMA);*/
+		R3 = dl - dl / cl * (bigU - ul);
 		R4 = dr + dr / cr * (bigU - ur);
 		if (bigU > 0) bigR = R3;
-		else bigR = R4;*/
+		else bigR = R4;
 	}
 	
 	u = bigU;
@@ -740,7 +740,8 @@ double initial_density(double x)
 	case 6: if (x <= 0.2) return 1.36205;
 			else if (x <= 0.3) return 4.875;
 			else return 3;
-	case 7: return 1.0;
+	case 7: if (x < DISC_POINT) return 1.0;
+			else return 2.0;
 	case 8: if (x <= 0.05) return st_R1;
 			else if (x <= 0.3) return st_R2;
 			else return st_R3;
@@ -1318,15 +1319,6 @@ void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P)
 	percents[numb] = float(counter2) / float(numcells) * 100.0f;  //when in int i counter is devided by counter all, its a деление нацело, so the result of 1/4=0;
 	printf("percents of all stream [0:1]: %f\n", percents[numb]);
 
-	/**************** счет интегралов по контуру (верх - низ)********/
-
-#ifdef INTEGRAL
-	boundary[numb][0] = integral_x(numcells, dx, difference_RW[2]);
-	boundary[numb][1] = integral_x(numcells, dx, difference_RW[3]);
-	boundary[numb][2] = integral_x(numcells, dx, difference_RW[4]);
-#endif
-
-	/**************** счет интегралов по контуру (верх - низ)********/
 
 	FILE *out4;
 	FILE *out5;
@@ -1636,10 +1628,9 @@ double RW_prop(int digit, double x, double numb, double ip_l, double id_l, doubl
 	return 0;
 }
 
-void outline_integral_riemann(int numcells, double timer, double tau, const double tt1, const double tt2, double xx1, double xx2, double* R, double*U, double*P, double*RE, double*S,
+void outline_integral_riemann(int numcells, double timer, double tau, double tt1, double tt2, double xx1, double xx2, double* R, double*U, double*P, double*RE, double*S,
 	/*output*/ double sum[4][4])
 {
-
 	int static check1 = 0;
 	int static check2 = 0;
 
@@ -1665,8 +1656,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, const doub
 	}
 
 	double dx = LENGTH / double(numcells);
-	double *xx;
-	xx = new double[numcells];
+	double *xx = new double[numcells];
 	int omp_chuck = numcells / OMP_CORES;
 
 	if (timer >= tt1 && timer <= tt2)
@@ -1723,7 +1713,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, const doub
 
 	if (timer >= tt2 && check2 == 0)
 	{
-#pragma omp parallel for simd reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided) num_threads(OMP_CORES)
+//#pragma omp parallel for simd reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided) num_threads(OMP_CORES)
 		for (int i = 0; i < numcells; i++)
 		{
 			if (xx[i] >= xx1 && xx[i] <= xx2)
@@ -1956,6 +1946,7 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_la
 			analitical_riemann_modeling(numcells, initial_density(0.05), initial_velocity(0.05), initial_pressure(0.05), initial_density(0.95), initial_velocity(0.95), initial_pressure(0.95), timer, exact_R, exact_U, exact_P);
 #elif (PROBLEM==0)
 			//analitical_SW();
+			//gnuplot_analitical_riemann(numcells, R, U, P, exact_R, exact_U, exact_P);
 #endif
 
 #pragma omp parallel for simd schedule(simd:static)
@@ -2989,15 +2980,15 @@ void gnuplot_n_smooth(int numb)
 	return;
 }
 
-void runge(double *massiv)
+void runge(double *massiv, int lda, int numb)
 {
 	double value[NUM_ITER - 2]; // without boundary points
 	for (int i = 0; i < NUM_ITER - 2; i++)
 	{
-		value[i] = log(fabs((fabs(massiv[i]) - fabs(massiv[i + 1])) / (fabs(massiv[i + 1]) - fabs(massiv[i + 2])))) / log(double(GRID));
-		//value[i] = log(fabs((massiv[i] - massiv[i + 1]) / (massiv[i + 1] - massiv[i + 2]))) / log(double(3.0));
+		//value[i] = log(fabs((fabs(massiv[i]) - fabs(massiv[i + 1])) / (fabs(massiv[i + 1]) - fabs(massiv[i + 2])))) / log(double(GRID));
+		value[i] = log(fabs((massiv[numb + lda * i] - massiv[numb + lda * (i + 1)]) / (massiv[numb + lda * (i + 1)] - massiv[numb + lda * (i + 2)]))) / log(double(GRID));
 
-		printf("\nTask: Precision order for iteration double %d: %lf\n", i + 1, value[i]);
+		printf("Precision order for iteration double %d: %lf\n", i + 1, value[i]);
 	}
 }
 
@@ -3311,8 +3302,8 @@ void iteration_bound(int numb)
 		uss[0] = l0_const + pss[0] / (R[0] * C[0]);
 		//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * C[numcells]);
 
-		S[0] = P[0] / pow(R[0], GAMMA);
-		//	S[numcells] = P[numcells] / pow(R[numcells], GAMMA);
+		S[0] = log(P[0] / pow(R[0], GAMMA));
+		//	S[numcells] = log(P[numcells] / pow(R[numcells], GAMMA));
 
 		dss[0] = pow(pss[0] / S[0], 1.0 / GAMMA);
 		//	dss[numcells] = pow(pss[numcells] / S[numcells], 1.0 / GAMMA);
@@ -3327,7 +3318,7 @@ void iteration_bound(int numb)
 
 		pss[0] = (uss[0] - l0_const)*(R[0] * C[0]);
 
-		S[0] = P[0] / pow(R[0], GAMMA);
+		S[0] = log(P[0] / pow(R[0], GAMMA));
 		dss[0] = pow(pss[0] / S[0], 1.0 / GAMMA);
 #elif (PROBLEM == 4)
 		// set pressure
@@ -3343,7 +3334,7 @@ void iteration_bound(int numb)
 		uss[0] = l0_const + pss[0] / (R[0] * C[0]);
 		//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * C[numcells]);
 
-		S[0] = P[0] / pow(R[0], GAMMA);
+		S[0] = log(P[0] / pow(R[0], GAMMA));
 		//	S[numcells] = P[numcells] / pow(R[numcells], GAMMA);
 
 		dss[0] = pow(pss[0] / S[0], 1.0 / GAMMA);
@@ -3583,7 +3574,7 @@ void iteration_bound(int numb)
 		{
 			U[i] = RU[i] / R[i]; //используется дальше в программе!!!!
 			P[i] = (GAMMA - 1.0) * (RE[i] - 0.5 * RU[i] * U[i]) + (R[i] - R0) * C0 * C0;
-			S[i] = P[i] / pow(R[i], GAMMA);
+			S[i] = log(P[i] / pow(R[i], GAMMA));
 		}
 
 
@@ -3720,7 +3711,7 @@ void iteration_bound(int numb)
 #endif
 						ps = P[i];
 						cs = sqrt(GAMMA*P[i] / R[i]);
-						es = P[i] / pow(R[i], GAMMA);
+						es = log(P[i] / pow(R[i], GAMMA));
 						if (i != 0 && i != numcells - 1) es_av = (P[i - 1] / pow(R[i - 1], GAMMA) + P[i] / pow(R[i], GAMMA) + P[i + 1] / pow(R[i + 1], GAMMA)) / 3.0;
 						else if (i == 0) es_av = (P[i] / pow(R[i], GAMMA) + P[i + 1] / pow(R[i + 1], GAMMA)) / 2.0;
 						else es_av = (P[i - 1] / pow(R[i - 1], GAMMA) + P[i] / pow(R[i], GAMMA)) / 2.0;
@@ -3959,7 +3950,7 @@ void iteration_bound(int numb)
 		us = U[i];
 		ps = P[i];
 		cs = sqrt(GAMMA*P[i] / R[i]);
-		ss = P[i] / pow(R[i], GAMMA);
+		ss = log(P[i] / pow(R[i], GAMMA));
 		rp = right_parts[i];
 
 

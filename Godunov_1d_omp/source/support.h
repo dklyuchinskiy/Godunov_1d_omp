@@ -10,15 +10,17 @@ void starpu(double &p, double &u, double dl, double ul, double pl, double cl, do
 double initial_density(double x);
 double initial_pressure(double x);
 double initial_velocity(double x);
-void linear(double dl, double ul, double pl, double dr, double ur, double pr, double &d, double &u, double &p);
-void linear_check(double dl, double ul, double pl, double dr, double ur, double pr, int &left, int &middle, int &right, int numb);
-void runge(double *massiv);
 double gyugonio(double p1, double ro1, double p2/*за ударной волной*/);
 double sw_speed2(double ro1, double u1, double p1, double ro2 /*за ударной волной*/, double p2 /*за ударной волной*/);
 double sw_speed(double ro1, double ro2, double u1, double u2);
 double* finite_difference(int numb, double *mas);
-void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P);
+double RW_prop(int digit, double x, double numb, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r);
 
+void iteration(int numb, double F_ro[], double ITER_TIME[]);
+void linear(double dl, double ul, double pl, double dr, double ur, double pr, double &d, double &u, double &p);
+void linear_check(double dl, double ul, double pl, double dr, double ur, double pr, int &left, int &middle, int &right, int numb);
+void runge(double *massiv, int ldf, int numb);
+void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P);
 void analitical_RW(FILE* file_name, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r, double numb);
 void analitical_SW(int numcells, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r, double *res_p, double *res_u, double* res_d, double timer);
 void analitical_riemann(int numcells, double p1, double ro1, double u1, double p2, double ro2, double u2, double *sol_p, double *sol_u);
@@ -27,7 +29,6 @@ void analitical_writing_into_file(int numcells, double* R_D, double*R_U, double*
 void difference_analitical_riemann_Linf(int numb, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P, double &delta_ro, double &delta_u, double &delta_p);
 void difference_analitical_riemann_L1(int numb, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P, double &sum_ro, double &sum_u, double &sum_p);
 void difference_SW(int numcells, double timer, double *R, double *U, double *P, double *shw_diff_d, double *shw_diff_u, double *shw_diff_p, double *shw_analit_d, double *shw_analit_u, double *shw_analit_p);
-double RW_prop(int digit, double x, double numb, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r);
 void outline_integral_riemann(int numcells, double timer, double tau, const double tt1, const double tt2, double xx1, double xx2, double* R, double*U, double*P, double*RE, double*S, /*output*/ double sum[4][4]);
 void gnuplot_one_iteration(int numcells);
 void gnuplot_RW_DIFF(int numcells);

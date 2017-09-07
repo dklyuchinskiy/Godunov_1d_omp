@@ -21,7 +21,7 @@
 //#define ENTROPY_RP  printf("Right parts are in entropy equation. We are calculating through entropy conservation law.");
 //#define SIMPLE printf("The simple print")
 //#define MY_OFFLOAD  printf("GFX offload")
-//#define INTEGRAL printf("Integrals are computed")
+#define INTEGRAL printf("Integrals are computed")
 //#define FIVE_T_STEPS
 #define OUTPUT_N_SMOOTH
 //#define DIFF_ANALIT_RIEMANN
@@ -42,15 +42,14 @@
 
 //#define BOUND_COND
 
-//#define NEW_VERSION  // без перекидки значений с 1 на 0 элемент массива
-
 #define DEBUG
 
 #ifdef INTEGRAL
 #define RUNGE
+#undef PRINT
 #endif
 
-#define NUM_ITER 7
+#define NUM_ITER 6
 
 #define GRID 3
 
@@ -61,7 +60,7 @@
 #define OMP_CORES 4
 #define LOOPS 6
 
-#define PROBLEM		2
+#define PROBLEM		0
 /*
 0 - shock wave
 1 - rarify wave
@@ -87,6 +86,14 @@
 */
 
 /*************************************/
+
+/* Accuracy */
+#ifdef INTEGRAL
+#define X1 0.05
+#define X2 0.95
+#define T1 0.0
+#define T2 0.3
+#endif
 
 //#define EXACT_DISC
 
@@ -245,7 +252,5 @@ extern double inflections[];
 extern double boundary[][3];
 
 extern double LOOP_TIME[][OMP_CORES];
-
-extern double F_ro_I[], F_ro_S[], F_ro_M[], F_ro_E[];
 extern double delta_D[], delta_U[], delta_P[];
 extern double l1_D[], l1_U[], l1_P[];
