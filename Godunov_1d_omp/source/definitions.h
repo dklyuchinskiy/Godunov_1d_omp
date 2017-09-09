@@ -21,7 +21,7 @@
 //#define ENTROPY_RP  printf("Right parts are in entropy equation. We are calculating through entropy conservation law.");
 //#define SIMPLE printf("The simple print")
 //#define MY_OFFLOAD  printf("GFX offload")
-#define INTEGRAL printf("Integrals are computed")
+//#define INTEGRAL printf("Integrals are computed")
 //#define FIVE_T_STEPS
 #define OUTPUT_N_SMOOTH
 //#define DIFF_ANALIT_RIEMANN
@@ -59,6 +59,9 @@
 
 #define OMP_CORES 4
 #define LOOPS 6
+
+#define EPS		1.0e-6	// точность решения нелинейного уравнения
+#define MAX_ITER	20	// количество итераций для решения нелинейного уравнения
 
 #define PROBLEM		0
 /*
@@ -241,16 +244,74 @@
 
 #define NUM_MESH	4			// number of mesh
 
-extern double time_max_array[];
+extern char prop[];
 
-//				 0    1    2    3     4     5      6      7       8
-extern int nmesh[];
-extern int nprnt[];
+extern double time_max_array[];
 
 extern double inflections[];
 
 extern double boundary[][3];
 
+extern char dip[3];
+
+extern float percents[NUM_ITER];
+
 extern double LOOP_TIME[][OMP_CORES];
 extern double delta_D[], delta_U[], delta_P[];
 extern double l1_D[], l1_U[], l1_P[];
+
+// arrays.cpp
+
+//				 0    1    2    3     4     5      6      7       8
+extern int nmesh[];
+extern int nprnt[];
+
+extern double g1, g2, g3, g4, g5, g6, g7, g8;
+
+extern float left_SW[];
+extern float right_SW[];
+
+extern float left_19[];
+extern float right_19[];
+
+//float left_7[6] = { 0.3f, -1.0f, 0.2f, 1.1f, 0.0f, 0.0f };
+//float right_7[6] = { 1.0f, 1.0f, 1.0f, 1.3f, 0.25f, 0.001f };
+
+extern float left_7[];
+extern float right_7[];
+
+extern float left_SW_cs[];
+extern float right_SW_cs[];
+
+extern float left_ST[];
+extern float right_ST[];
+
+extern float left_RW[];
+extern float right_RW[];
+
+extern float left_sodd[];
+extern float right_sodd[];
+
+extern float left_2RR[];
+extern float right_2RR[];
+
+extern float left_RW_SW[];
+extern float right_RW_SW[];
+
+extern float left_RW_RW[];
+extern float right_RW_RW[];
+
+extern float left_RW1_RW1[];
+extern float right_RW1_RW1[];
+
+extern float left_RW2_RW2[];
+extern float right_RW2_RW2[];
+
+extern float left_RW3_RW3[];
+extern float right_RW3_RW3[];
+
+extern float left_RP[];
+extern float right_RP[];
+
+
+
