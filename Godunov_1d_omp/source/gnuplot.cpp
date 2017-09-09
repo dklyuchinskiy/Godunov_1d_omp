@@ -1,114 +1,6 @@
 #include "definitions.h"
 #include "support.h"
 
-void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
-{
-	FILE* fout;
-	FILE* plot;
-	char name1[255], name2[255];
-	double dx = LENGTH / double(numcells);
-	double ds, us, ps, x;
-	double time_control[N_smooth];
-	double k_step = time_max_array[PROBLEM] / N_smooth;
-	printf("step %lf\n", k_step);
-	for (int i = 0; i < N_smooth; i++)
-		time_control[i] = (i + 1)*k_step;
-
-
-
-	for (int i = 0; i < 4; i++) //итерации по характеристикам газа
-	{
-		if (i == 3) continue;
-		/*----------------------------------------*/
-		sprintf(name2, "N%03d_P%1d_riemann_analit.plt", numcells, PROBLEM);
-		plot = fopen(name2, "w");
-
-		fprintf(plot, "reset\n\
-					  				  clear\n\n\
-									  				   ###################################\n\
-													   				   set term png font \"Times-Roman, 16\"\n\n\
-																	   				    ##################################\n\n");
-		for (int k = 0; k < N_smooth; k++)
-		{
-
-#ifndef NC
-			fprintf(plot, "set xrange[0:1]\n\n"); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
-#else
-#ifdef NC2
-			fprintf(plot, "set xlabel \"(x-x0-Dt)/h\"\n");
-			fprintf(plot, "set xrange[-15:15]\n\n"); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
-#else
-			fprintf(plot, "set xlabel \"x-x0-Dt\"\n");
-			fprintf(plot, "set xrange[-0.5:0.5]\n\n"); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
-#endif		
-#endif
-													   /*--------------------------------------------*/
-
-#ifndef NC
-#if PROBLEM!=9
-			if (i == 1) fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_SW[i], right_SW[i]);
-			else fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_SW[i], right_RW[i]);
-#else
-			fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_sodd[i], right_sodd[i]);
-#endif
-#else
-			if (PROBLEM == 2) fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_SW[i], right_SW[i]);
-#endif
-
-			if (i == 0) fprintf(plot, "set ylabel \"density\"\n");
-			if (i == 1)	fprintf(plot, "set ylabel \"velocity\"\n");
-			if (i == 2)	fprintf(plot, "set ylabel \"pressure\"\n");
-			if (i == 4) fprintf(plot, "set ylabel \"entropy\"\n");
-#ifdef RP
-			fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat' using 1:%d w l lw 2 title \"exact\", 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w linespoints pt 4 lt rgb 'blue' title \"num\", 'RP_N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w linespoints pt 7 lt rgb 'green' title \"num_rp\" \n\n",
-				numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
-#else
-
-#ifndef NC
-			if (i != 4)
-			{
-				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
-				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, TYPE, time_control[k], i + 2);
-			}
-			else
-			{
-				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
-				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
-
-				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/AV_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
-				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 3);
-			}
-#else
-#ifdef NC2
-#ifdef SW_POINTS_PRINT
-			if (i == 0) fprintf(plot, "\nset label \"N_{sw} = %d\" at 7, 1.2\n\n", n_r[k]);
-			if (i == 1) fprintf(plot, "\nset label \"N_{sw} = %d\" at 7, 0.25\n\n", n_u[k]);
-			if (i == 2) fprintf(plot, "\nset label \"N_{sw} = %d\" at 7, 1.3\n\n", n_p[k]);
-#endif
-#ifdef SW_POINTS_PRINT
-			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/pr_ND_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, dip[i], time_control[k]);
-#else
-			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/ND_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, dip[i], time_control[k]);
-#endif
-#else
-			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/NC_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, dip[i], time_control[k]);
-#endif
-			fprintf(plot, "plot 'workspace/%03d/NC_N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf_NC.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
-#endif
-
-
-#endif
-		}
-		//fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat' using 1:%d w l lw 2 title \"numerical\", 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w l lw 2 title \"exact\"\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
-		fprintf(plot, "\nclear\nreset\n");
-		fprintf(plot, "\n\n");
-
-		fclose(plot);
-		if (i == 4) system(name2);
-
-	}
-}
-
 void gnuplot_n_smooth(int numb)
 {
 	FILE* plot;
@@ -320,6 +212,198 @@ void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_la
 		}
 	}
 }
+
+void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth], int sw3[3][N_smooth])
+{
+	FILE* plot;
+	double time_control[N_smooth];
+	double k_step = time_max_array[PROBLEM] / N_smooth;
+	printf("step %lf\n", k_step);
+	for (int i = 0; i < N_smooth; i++)
+		time_control[i] = (i + 1)*k_step;
+
+	//RUP
+	double left[5];
+	double right[5];
+
+	int small = 0;
+
+	left[0] = st_th_R2;
+	left[1] = st_th_U2;
+	left[2] = st_th_P2;
+	left[3] = 0;
+	left[4] = sqrt(GAMMA*st_th_P2 / st_th_R2) - 1;
+
+	right[0] = st_th_R1;
+	right[1] = st_th_U1;
+	right[2] = st_th_P1;
+	right[3] = 0;
+	right[4] = sqrt(GAMMA*st_th_P1 / st_th_R1) + 1;
+
+	for (int i = 0; i < 6; i++)
+	{
+		if (i == 5)
+		{
+			// SMALL OR BIG
+			small = 0;
+		}
+		if (i == 3) continue;  // entropy - 4 , diff in entropy - 5
+		plot = fopen("N_smooth2.plt", "w");
+		for (int k = 0; k < N_smooth; k++)
+		{
+
+			fprintf(plot, "\nreset\nclear\n\n###################################\nset term png font \"Times-Roman, 16\"\n\n##################################\n\n");
+
+			fprintf(plot, "set xrange[0.0:%f]\n\n", LENGTH); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
+			fprintf(plot, "set xlabel \"x\"\n");
+
+			if (PROBLEM == 0 || PROBLEM == 18) fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", left_SW[i], right_SW[i]);
+			//if (PROBLEM == 1) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW[i], right_RW[i]);
+
+			if (PROBLEM == 2 || PROBLEM == 17)
+			{
+				if (small == 1) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", -0.002, 0.008);
+				else fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_ST[i], right_ST[i]);
+			}
+			if (PROBLEM == 3)  fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", -1.0, 1.0);
+			if (PROBLEM == 8 || PROBLEM == 20)  fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", left_RW_RW[i], right_RW_RW[i]);
+			if (PROBLEM == 10) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left[i], right[i]);
+			if (PROBLEM == 5) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_2RR[i], right_2RR[i]);
+			if (PROBLEM == 19) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_19[i], right_19[i]);
+			if (PROBLEM == 7) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_7[i], right_7[i]);
+			if (PROBLEM == 4)
+			{
+#ifdef P4_ONE_WAVE 
+				fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW3_RW3[i], right_RW3_RW3[i]);
+#else
+				fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_RW2_RW2[i], right_RW2_RW2[i]);
+#endif
+			}
+			if (i == 0) fprintf(plot, "set ylabel \"density\"\n");
+			if (i == 1)	fprintf(plot, "set ylabel \"velocity\"\n");
+			if (i == 2)	fprintf(plot, "set ylabel \"pressure\"\n");
+			if (i == 4)	fprintf(plot, "set ylabel \"entropy\"\n");
+			if (i == 5)	fprintf(plot, "set ylabel \"entropy difference\"\n");
+#ifdef SW_POINTS_PRINT
+			if (i == 0) fprintf(plot, "f(x) = %lf\ng(x) = %lf\n", initial_density(0.03) - DELTA, initial_density(0.95) + DELTA);
+			if (i == 1)	fprintf(plot, "f(x) = %lf\ng(x) = %lf\n", initial_velocity(0.03) - DELTA, initial_velocity(0.95) + DELTA);
+			if (i == 2)	fprintf(plot, "f(x) = %lf\ng(x) = %lf\n", initial_pressure(0.03) - DELTA, initial_pressure(0.95) + DELTA);
+
+#if(PROBLEM == 8 || PROBLEM == 4)
+			if (time_control[k] < 0.26)
+			{
+				if (i == 0) fprintf(plot, "\nset label \"N_{sw1} = %d\" at 0.1, 0.2\n\n", sw1[0][k]);
+				if (i == 1) fprintf(plot, "\nset label \"N_{sw1} = %d\" at 0.1, 0.2\n\n", sw1[1][k]);
+				if (i == 2) fprintf(plot, "\nset label \"N_{sw1} = %d\" at 0.1, 0.2\n\n", sw1[2][k]);
+
+				if (i == 0) fprintf(plot, "\nset label \"N_{sw2} = %d\" at 0.1, 0.0\n\n", sw2[0][k]);
+				if (i == 1) fprintf(plot, "\nset label \"N_{sw2} = %d\" at 0.1, 0.0\n\n", sw2[1][k]);
+				if (i == 2) fprintf(plot, "\nset label \"N_{sw2} = %d\" at 0.1, 0.0\n\n", sw2[2][k]);
+			}
+			else
+			{
+				if (i == 0) fprintf(plot, "\nset label \"N_{sw3} = %d\" at 0.1, -0.2\n\n", sw3[0][k]);
+				if (i == 1) fprintf(plot, "\nset label \"N_{sw3} = %d\" at 0.1, -0.2\n\n", sw3[1][k]);
+				if (i == 2) fprintf(plot, "\nset label \"N_{sw3} = %d\" at 0.1, -0.2\n\n", sw3[2][k]);
+			}
+#endif
+#endif		
+
+#ifdef NC2
+			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_NC2_N%03d_P%1d_%6.4lf_%c_NC.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
+#else
+#ifndef P4_ONE_WAVE
+			if (small == 1)
+			{
+				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/small_%c_W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
+			}
+			else {
+				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
+			}
+#else
+			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_EXACT_%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
+#endif
+#endif
+
+			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 lt rgb 'purple' notitle\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, (k + 1)* k_step, i + 2);
+
+		}
+		small = 0;
+		fclose(plot);
+		system("N_smooth2.plt");
+	}
+
+
+	return;
+}
+
+void gnuplot_n_smooth3(int numcells)
+{
+	FILE* plot;
+	double time_control[N_smooth];
+	double k_step = time_max_array[PROBLEM] / N_smooth;
+	printf("step %lf\n", k_step);
+	for (int i = 0; i < N_smooth; i++)
+		time_control[i] = (i + 1)*k_step;
+
+	//RUP
+	double left[5];
+	double right[5];
+
+	left[0] = st_th_R2;
+	left[1] = st_th_U2;
+	left[2] = st_th_P2;
+	left[3] = 0;
+	//left[4] = sqrt(GAMMA*st_th_P2 / st_th_R2) - 1;
+	left[4] = 0.8;
+
+	right[0] = st_th_R1;
+	right[1] = st_th_U1;
+	right[2] = st_th_P1;
+	right[3] = 0;
+	//right[4] = sqrt(GAMMA*st_th_P1 / st_th_R1) + 1;
+	right[4] = 1.3;
+
+	for (int i = 0; i < 5; i++)
+	{
+		if (i == 3) continue;  // entropy - 4
+		plot = fopen("N_smooth3.plt", "w");
+		for (int k = 0; k < N_smooth; k++)
+		{
+
+			fprintf(plot, "\nreset\nclear\n\n###################################\nset term png font \"Times-Roman, 16\"\n\n##################################\n\n");
+
+			fprintf(plot, "set xrange[0.0:1.0]\n\n"); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
+			fprintf(plot, "set xlabel \"x\"\n");
+
+			if (PROBLEM == 0) fprintf(plot, "set yrange[%4.3f:%4.3f]\n\n", left_SW[i], right_SW[i]);
+			if (PROBLEM == 1) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW[i], right_RW[i]);
+			if (PROBLEM == 8)  fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW_RW[i], right_RW_RW[i]);
+			if (PROBLEM == 10) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left[i], right[i]);
+
+#ifdef SW_POINTS_PRINT
+			if (i == 0) fprintf(plot, "set ylabel \"density\"\nf(x) = %lf\ng(x) = %lf\n", initial_density(0.03) - DELTA, initial_density(0.95) + DELTA);
+			if (i == 1)	fprintf(plot, "set ylabel \"velocity\"\nf(x) = %lf\ng(x) = %lf\n", initial_velocity(0.03) - DELTA, initial_velocity(0.95) + DELTA);
+			if (i == 2)	fprintf(plot, "set ylabel \"pressure\"\nf(x) = %lf\ng(x) = %lf\n", initial_pressure(0.03) - DELTA, initial_pressure(0.95) + DELTA);
+			if (i == 4)	fprintf(plot, "set ylabel \"entropy\"\n");
+
+#endif
+
+			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
+
+			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title 'exact RP', \
+						  'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title 'linear RP' \n\n",
+				numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, 'E', (k + 1)* k_step, i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, 'L', (k + 1)* k_step, i + 2);
+
+		}
+		fclose(plot);
+		system("N_smooth3.plt");
+	}
+
+
+	return;
+}
+
 
 void gnuplot_one_iteration(int numcells) //together with analitical solution
 {
@@ -817,232 +901,161 @@ void gnuplot_analitical_riemann(int numcells, double* R, double*U, double*P, dou
 	system(name);
 }
 
-
-void gnuplot_n_smooth2(int numcells, int* sw1_r, int* sw1_u, int* sw1_p,
-	int* sw2_r, int* sw2_u, int* sw2_p,
-	int* sw3_r, int* sw3_u, int* sw3_p)
+void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 {
+	FILE* fout;
 	FILE* plot;
+	char name1[255], name2[255];
+	double dx = LENGTH / double(numcells);
+	double ds, us, ps, x;
 	double time_control[N_smooth];
 	double k_step = time_max_array[PROBLEM] / N_smooth;
 	printf("step %lf\n", k_step);
 	for (int i = 0; i < N_smooth; i++)
 		time_control[i] = (i + 1)*k_step;
 
-	//RUP
-	double left[5];
-	double right[5];
 
-	int small = 0;
-
-	left[0] = st_th_R2;
-	left[1] = st_th_U2;
-	left[2] = st_th_P2;
-	left[3] = 0;
-	left[4] = sqrt(GAMMA*st_th_P2 / st_th_R2) - 1;
-
-	right[0] = st_th_R1;
-	right[1] = st_th_U1;
-	right[2] = st_th_P1;
-	right[3] = 0;
-	right[4] = sqrt(GAMMA*st_th_P1 / st_th_R1) + 1;
-
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < 4; i++) //итерации по характеристикам газа
 	{
-		if (i == 5)
-		{
-			// SMALL OR BIG
-			small = 0;
-		}
-		if (i == 3) continue;  // entropy - 4 , diff in entropy - 5
-		plot = fopen("N_smooth2.plt", "w");
+		if (i == 3) continue;
+		/*----------------------------------------*/
+		sprintf(name2, "N%03d_P%1d_riemann_analit.plt", numcells, PROBLEM);
+		plot = fopen(name2, "w");
+
+		fprintf(plot, "reset\n\
+					   clear\n\n\
+					   ###################################\n\
+					   set term png font \"Times-Roman, 16\"\n\n\
+						##################################\n\n");
+
 		for (int k = 0; k < N_smooth; k++)
 		{
 
-			fprintf(plot, "\nreset\nclear\n\n###################################\nset term png font \"Times-Roman, 16\"\n\n##################################\n\n");
-
-			fprintf(plot, "set xrange[0.0:%f]\n\n", LENGTH); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
-			fprintf(plot, "set xlabel \"x\"\n");
-
-			if (PROBLEM == 0 || PROBLEM == 18) fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", left_SW[i], right_SW[i]);
-			//if (PROBLEM == 1) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW[i], right_RW[i]);
-
-			if (PROBLEM == 2 || PROBLEM == 17)
-			{
-				if (small == 1) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", -0.002, 0.008);
-				else fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_ST[i], right_ST[i]);
-			}
-			if (PROBLEM == 3)  fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", -1.0, 1.0);
-			if (PROBLEM == 8 || PROBLEM == 20)  fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", left_RW_RW[i], right_RW_RW[i]);
-			if (PROBLEM == 10) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left[i], right[i]);
-			if (PROBLEM == 5) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_2RR[i], right_2RR[i]);
-			if (PROBLEM == 19) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_19[i], right_19[i]);
-			if (PROBLEM == 7) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_7[i], right_7[i]);
-			if (PROBLEM == 4)
-			{
-#ifdef P4_ONE_WAVE 
-				fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW3_RW3[i], right_RW3_RW3[i]);
+#ifndef NC
+			fprintf(plot, "set xrange[0:1]\n\n"); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
 #else
-				fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_RW2_RW2[i], right_RW2_RW2[i]);
+#ifdef NC2
+			fprintf(plot, "set xlabel \"(x-x0-Dt)/h\"\n");
+			fprintf(plot, "set xrange[-15:15]\n\n"); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
+#else
+			fprintf(plot, "set xlabel \"x-x0-Dt\"\n");
+			fprintf(plot, "set xrange[-0.5:0.5]\n\n"); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
+#endif		
 #endif
-			}
+													   /*--------------------------------------------*/
+
+#ifndef NC
+#if PROBLEM!=9
+			if (i == 1) fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_SW[i], right_SW[i]);
+			else fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_SW[i], right_RW[i]);
+#else
+			fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_sodd[i], right_sodd[i]);
+#endif
+#else
+			if (PROBLEM == 2) fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_SW[i], right_SW[i]);
+#endif
+
 			if (i == 0) fprintf(plot, "set ylabel \"density\"\n");
 			if (i == 1)	fprintf(plot, "set ylabel \"velocity\"\n");
 			if (i == 2)	fprintf(plot, "set ylabel \"pressure\"\n");
-			if (i == 4)	fprintf(plot, "set ylabel \"entropy\"\n");
-			if (i == 5)	fprintf(plot, "set ylabel \"entropy difference\"\n");
-#ifdef SW_POINTS_PRINT
-			if (i == 0) fprintf(plot, "f(x) = %lf\ng(x) = %lf\n", initial_density(0.03) - DELTA, initial_density(0.95) + DELTA);
-			if (i == 1)	fprintf(plot, "f(x) = %lf\ng(x) = %lf\n", initial_velocity(0.03) - DELTA, initial_velocity(0.95) + DELTA);
-			if (i == 2)	fprintf(plot, "f(x) = %lf\ng(x) = %lf\n", initial_pressure(0.03) - DELTA, initial_pressure(0.95) + DELTA);
+			if (i == 4) fprintf(plot, "set ylabel \"entropy\"\n");
+#ifdef RP
+			fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat' using 1:%d w l lw 2 title \"exact\", 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w linespoints pt 4 lt rgb 'blue' title \"num\", 'RP_N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w linespoints pt 7 lt rgb 'green' title \"num_rp\" \n\n",
+				numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+#else
 
-#endif
-
-#ifdef SW_POINTS_PRINT
-#if(PROBLEM == 8 || PROBLEM == 4)
-			if (time_control[k] < 0.26)
+#ifndef NC
+			if (i != 4)
 			{
-				if (i == 0) fprintf(plot, "\nset label \"N_{sw1} = %d\" at 0.1, 0.2\n\n", sw1_r[k]);
-				if (i == 1) fprintf(plot, "\nset label \"N_{sw1} = %d\" at 0.1, 0.2\n\n", sw1_u[k]);
-				if (i == 2) fprintf(plot, "\nset label \"N_{sw1} = %d\" at 0.1, 0.2\n\n", sw1_p[k]);
-
-				if (i == 0) fprintf(plot, "\nset label \"N_{sw2} = %d\" at 0.1, 0.0\n\n", sw2_r[k]);
-				if (i == 1) fprintf(plot, "\nset label \"N_{sw2} = %d\" at 0.1, 0.0\n\n", sw2_u[k]);
-				if (i == 2) fprintf(plot, "\nset label \"N_{sw2} = %d\" at 0.1, 0.0\n\n", sw2_p[k]);
+				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
+				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, TYPE, time_control[k], i + 2);
 			}
 			else
 			{
-				if (i == 0) fprintf(plot, "\nset label \"N_{sw3} = %d\" at 0.1, -0.2\n\n", sw3_r[k]);
-				if (i == 1) fprintf(plot, "\nset label \"N_{sw3} = %d\" at 0.1, -0.2\n\n", sw3_u[k]);
-				if (i == 2) fprintf(plot, "\nset label \"N_{sw3} = %d\" at 0.1, -0.2\n\n", sw3_p[k]);
-			}
-#endif
-#endif		
+				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
+				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
 
+				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/AV_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
+				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 3);
+			}
+#else
 #ifdef NC2
-			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_NC2_N%03d_P%1d_%6.4lf_%c_NC.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
-#else
-#ifndef P4_ONE_WAVE
-			if (small == 1)
-			{
-				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/small_%c_W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
-			}
-			else {
-				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
-			}
-#else
-			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_EXACT_%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
-#endif
-#endif
-
-			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 lt rgb 'purple' notitle\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, (k + 1)* k_step, i + 2);
-
-			/*		if (i == 4)
-			{
-			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
-			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 notitle\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, (k + 1)* k_step, i + 2);
-
-			//	fprintf(plot, "set output 'workspace/%03d/S/P_%1d/EXACT_AV_%03d_P%1d_%c_%6.4lf_S.png'\n", numcells, PROBLEM, numcells, PROBLEM, (char)TYPE, (k + 1)*k_step);
-			//	fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 notitle\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, (k + 1)* k_step, i + 3);
-			}
-			else
-			{
-			#ifdef SW_POINTS_PRINT
-			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle, \
-			'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 notitle  \n\n",
-			numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, (k + 1)* k_step, i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, (k + 1)* k_step, i + 2);
-			#else
-			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 notitle\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, (k + 1)* k_step, i + 2);
-			#endif
-			}*/
-
-			//	fprintf(plot, "set output 'N%04d_P%1d_%6.4lf_%c_NC.png'\n", nmesh[numb], PROBLEM, time_control[k], prop[i]);
-			//	fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_%6.4f_NC.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle\n\n", nmesh[numb], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
-
-		}
-		small = 0;
-		fclose(plot);
-		system("N_smooth2.plt");
-	}
-
-
-	return;
-}
-
-void gnuplot_n_smooth3(int numcells, int* sw1_r, int* sw1_u, int* sw1_p,
-	int* sw2_r, int* sw2_u, int* sw2_p,
-	int* sw3_r, int* sw3_u, int* sw3_p)
-{
-	FILE* plot;
-	double time_control[N_smooth];
-	double k_step = time_max_array[PROBLEM] / N_smooth;
-	printf("step %lf\n", k_step);
-	for (int i = 0; i < N_smooth; i++)
-		time_control[i] = (i + 1)*k_step;
-
-	//RUP
-	double left[5];
-	double right[5];
-
-	left[0] = st_th_R2;
-	left[1] = st_th_U2;
-	left[2] = st_th_P2;
-	left[3] = 0;
-	//left[4] = sqrt(GAMMA*st_th_P2 / st_th_R2) - 1;
-	left[4] = 0.8;
-
-	right[0] = st_th_R1;
-	right[1] = st_th_U1;
-	right[2] = st_th_P1;
-	right[3] = 0;
-	//right[4] = sqrt(GAMMA*st_th_P1 / st_th_R1) + 1;
-	right[4] = 1.3;
-
-	for (int i = 0; i < 5; i++)
-	{
-		if (i == 3) continue;  // entropy - 4
-		plot = fopen("N_smooth3.plt", "w");
-		for (int k = 0; k < N_smooth; k++)
-		{
-
-			fprintf(plot, "\nreset\nclear\n\n###################################\nset term png font \"Times-Roman, 16\"\n\n##################################\n\n");
-
-			fprintf(plot, "set xrange[0.0:1.0]\n\n"); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
-			fprintf(plot, "set xlabel \"x\"\n");
-
-			if (PROBLEM == 0) fprintf(plot, "set yrange[%4.3f:%4.3f]\n\n", left_SW[i], right_SW[i]);
-			if (PROBLEM == 1) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW[i], right_RW[i]);
-			if (PROBLEM == 8)  fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW_RW[i], right_RW_RW[i]);
-			if (PROBLEM == 10) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left[i], right[i]);
-
 #ifdef SW_POINTS_PRINT
-			if (i == 0) fprintf(plot, "set ylabel \"density\"\nf(x) = %lf\ng(x) = %lf\n", initial_density(0.03) - DELTA, initial_density(0.95) + DELTA);
-			if (i == 1)	fprintf(plot, "set ylabel \"velocity\"\nf(x) = %lf\ng(x) = %lf\n", initial_velocity(0.03) - DELTA, initial_velocity(0.95) + DELTA);
-			if (i == 2)	fprintf(plot, "set ylabel \"pressure\"\nf(x) = %lf\ng(x) = %lf\n", initial_pressure(0.03) - DELTA, initial_pressure(0.95) + DELTA);
-			if (i == 4)	fprintf(plot, "set ylabel \"entropy\"\n");
-
+			if (i == 0) fprintf(plot, "\nset label \"N_{sw} = %d\" at 7, 1.2\n\n", n_r[k]);
+			if (i == 1) fprintf(plot, "\nset label \"N_{sw} = %d\" at 7, 0.25\n\n", n_u[k]);
+			if (i == 2) fprintf(plot, "\nset label \"N_{sw} = %d\" at 7, 1.3\n\n", n_p[k]);
+#endif
+#ifdef SW_POINTS_PRINT
+			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/pr_ND_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, dip[i], time_control[k]);
+#else
+			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/ND_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, dip[i], time_control[k]);
+#endif
+#else
+			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/NC_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, dip[i], time_control[k]);
+#endif
+			fprintf(plot, "plot 'workspace/%03d/NC_N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf_NC.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
 #endif
 
 
-
-
-			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
-
-
-			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title 'exact RP', \
-						  'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title 'linear RP' \n\n",
-				numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, 'E', (k + 1)* k_step, i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, 'L', (k + 1)* k_step, i + 2);
-
-
-
+#endif
 		}
+		//fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat' using 1:%d w l lw 2 title \"numerical\", 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w l lw 2 title \"exact\"\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+		fprintf(plot, "\nclear\nreset\n");
+		fprintf(plot, "\n\n");
+
 		fclose(plot);
-		system("N_smooth3.plt");
+		if (i == 4) system(name2);
+
 	}
-
-
-	return;
 }
 
+void gnuplot_last_step(int numcells, double dx, double D_analit, double *R, double *U, double *P)
+{
+	double us, cs, ps, ds, ss;
+	double x, x_NC;
+	char FileName[255];
+	FILE *fout;
+#ifndef RP
+	sprintf(FileName, "N%04d_P%1d_SLV%1d_TERM%.0lf.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
+	fout = fopen(FileName, "w");
+#else
+	sprintf(FileName, "RP_N%04d_P%1d_SLV%1d_TERM%.0lf.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
+	fout = fopen(FileName, "w");
+#endif
+
+
+#ifdef FIRST
+	for (int i = start_print; i < numcells; i += jump_print)  // вывод всегда по 100 точек ( с первой итерации которые )
+#else
+	for (int i = 0; i < numcells; i++)  // вывод всегда по 100 точек ( с первой итерации которые )
+#endif
+	{
+		x = i*dx + 0.5*dx;
+#if (PROBLEM==0)
+		x_NC = (i*dx + 0.5*dx) - D_analit*time_max_array[0];  //NC
+#elif (PROBLEM==1)
+		x_NC = (i*dx + 0.5*dx - 0.1) / (time_max_array[0] * (numb + 1));  //NC
+#endif
+
+		/********************************************************************************************************************************
+		| 1 |    2    |   3   |     4    |          5        |         6       |      7      |          8        |      9       |   10  |
+		| x | density | speed | pressure | velocity of sound |       entropy   |      term    |	                 |   pg/pg_max  | h_pow |
+		********************************************************************************************************************************/
+		ds = R[i];
+		us = U[i];
+		ps = P[i];
+		cs = sqrt(GAMMA*P[i] / R[i]);
+		ss = log(P[i] / pow(R[i], GAMMA));
+
+
+#ifndef NC
+		fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf \n", x, ds, us, ps, cs, ss);
+#else 
+		//fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %30.24lf %30.24lf %30.24lf \n", x_NC, ds, us, ps, cs, es, rp, pg, hh);
+		fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf\n", x_layer_NC[i], ds, us, ps, cs, ss);
+#endif
+
+	}
+}
 
 /**************************************************/

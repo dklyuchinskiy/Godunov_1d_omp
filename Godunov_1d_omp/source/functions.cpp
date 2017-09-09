@@ -1657,10 +1657,10 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 	free(xx);
 }
 
-void inf_before_start(int numcells, double *R, double *U, double *P)
+void inf_before_start(int numcells, double *R, double *U, double *P, double &D_analit)
 { 
 #if PROBLEM==0
-	double D_analit = (R[numcells - 1] * U[numcells - 1] - R[0] * U[0]) / (R[numcells - 1] - R[0]);
+	D_analit = (R[numcells - 1] * U[numcells - 1] - R[0] * U[0]) / (R[numcells - 1] - R[0]);
 	printf("Analitical speed: %10.8lf\n\n", D_analit);
 #elif PROBLEM == 12
 	double uc_left, uc_right;
@@ -1678,7 +1678,7 @@ void inf_before_start(int numcells, double *R, double *U, double *P)
 	double u_right = 0.292868067614595;
 	double u_left = 0;
 
-	double D_analit = (ro_right * u_right - ro_left * u_left) / (ro_right - ro_left);
+	D_analit = (ro_right * u_right - ro_left * u_left) / (ro_right - ro_left);
 	//	printf("Analitical speed: %10.8lf\n\n", D_analit);
 	//	system("pause");
 

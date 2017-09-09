@@ -1,15 +1,21 @@
-#pragma once
+
+// Kernel
 
 void sample(double &pm, double &um, double &s, double dl, double ul, double pl, double cl, double dr, double ur, double pr, double cr, double &d, double &u, double &p);
 void prefun(double &f, double &fd, double &p, double &dk, double &pk, double &ck);
 double guessp(double dl, double ul, double pl, double cl, double dr, double ur, double pr, double cr);
 void starpu(double &p, double &u, double dl, double ul, double pl, double cl, double dr, double ur, double pr, double cr);
 
-// Functions
+void iteration(int numb);
+void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss);
+void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last);
+void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double tau, double *t, double *UFLUX);
+void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P);
 
 double initial_density(double x);
 double initial_pressure(double x);
 double initial_velocity(double x);
+
 double gyugonio(double p1, double ro1, double p2/*за ударной волной*/);
 double sw_speed2(double ro1, double u1, double p1, double ro2 /*за ударной волной*/, double p2 /*за ударной волной*/);
 double sw_speed(double ro1, double ro2, double u1, double u2);
@@ -30,6 +36,13 @@ void difference_analitical_riemann_Linf(int numb, double *R, double *U, double *
 void difference_analitical_riemann_L1(int numb, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P, double &sum_ro, double &sum_u, double &sum_p);
 void difference_SW(int numcells, double timer, double *R, double *U, double *P, double *shw_diff_d, double *shw_diff_u, double *shw_diff_p, double *shw_analit_d, double *shw_analit_u, double *shw_analit_p);
 void outline_integral_riemann(int numcells, double timer, double tau, const double tt1, const double tt2, double xx1, double xx2, double* R, double*U, double*P, double*RE, double*S, /*output*/ double sum[4][4]);
+void file_exact_diff(int numcells, double *exact_R, double *exact_U, double *exact_P, double *exact_RE, double *exact_S, double *diff_R, double *diff_U, double *diff_P, double time);
+void inf_before_start(int numcells, double *R, double *U, double *P, double &D_analit);
+void iteration_bound(int numb);
+void first_step_validation(FILE *file, int numcells, int c_c, double timer, double *R, double *U, double *P, double *dss, double *uss, double *pss);
+
+// Gnuplot
+
 void gnuplot_one_iteration(int numcells);
 void gnuplot_RW_DIFF(int numcells);
 void gnuplot_RW_NUM_ANALITIC(int numcells);
@@ -41,17 +54,10 @@ void gnuplot_five_t_steps(int numb);
 void gnuplot_n_smooth_NC(int numb);
 void gnuplot_n_smooth_NC2(int numcells, int* n_r, int* n_u, int* n_p);
 void gnuplot_analitical_riemann(int numcells, double* R, double*U, double*P, double* R_D, double*R_U, double*R_P);
-void file_exact_diff(int numcells, double *exact_R, double *exact_U, double *exact_P, double *exact_RE, double *exact_S, double *diff_R, double *diff_U, double *diff_P, double time);
 void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *UFLUX);
 void gnuplot_n_smooth(int numb);
-void gnuplot_n_smooth2(int numcells, int* sw1_r, int* sw1_u, int* sw1_p, int* sw2_r, int* sw2_u, int* sw2_p, int* sw3_r, int* sw3_u, int* sw3_p);
-void gnuplot_n_smooth3(int numcells, int* sw1_r, int* sw1_u, int* sw1_p, int* sw2_r, int* sw2_u, int* sw2_p, int* sw3_r, int* sw3_u, int* sw3_p);
+void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth], int sw3[3][N_smooth]);
+void gnuplot_n_smooth3(int numcells);
 void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p);
-void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss);
-void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last);
-void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double tau, double *t, double *UFLUX);
-void inf_before_start(int numcells, double *R, double *U, double *P);
-void iteration(int numb);
-void iteration_bound(int numb);
-void first_step_validation(FILE *file, int numcells, int c_c, double timer, double *R, double *U, double *P, double *dss, double *uss, double *pss);
-void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P);
+void gnuplot_last_step(int numcells, double dx, double D_analit, double *R, double *U, double *P);
+

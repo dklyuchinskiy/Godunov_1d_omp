@@ -6,9 +6,9 @@
 
 double inflections[NUM_ITER] = { 0 };
 
-int *sw1_num_p, *sw2_num_p, *sw3_num_p;
-int *sw1_num_u, *sw2_num_u, *sw3_num_u;
-int *sw1_num_r, *sw2_num_r, *sw3_num_r;
+int sw1_num[3][N_smooth] = { 0 };
+int sw2_num[3][N_smooth] = { 0 };
+int sw3_num[3][N_smooth] = { 0 };
 
 double delta_D[NUM_ITER] = { 0 }, delta_U[NUM_ITER] = { 0 }, delta_P[NUM_ITER] = { 0 };
 double l1_D[NUM_ITER] = { 0 }, l1_U[NUM_ITER] = { 0 }, l1_P[NUM_ITER] = { 0 };
@@ -32,38 +32,27 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	double *UFLUX;	// velocity flux
 
 	double *uss, *pss, *dss; // boundaries
-
 	double *exact_R, *exact_U, *exact_P, *exact_RE, *exact_S; // exact values
 	double *diff_R, *diff_U, *diff_P, *diff_RE, *diff_S; // diff of analyt and numerical functions
-
+	double *diff; // for this array the memory is allocated inside function 
 	double *x_init, *x_layer, *x_layer_NC; // coordinates
 
 	int numcells, start_print, jump_print, left_index, right_index, imesh;
 	int iter = 0, count = 0, last = 0;
+	int check1 = 0, check2 = 0, check3 = 0, check5[5] = { 0 };
 
 	double timer, time_max, tau, dx, dtdx, len, x, x_NC, wtime;
 	double ds = 0, us = 0, ps = 0, es = 0, es_diff = 0, cs = 0;
-	double l1, r1, l2, r2;
-
+	double u1 = 0, u2 = 0, u3 = 0, u_loc = 0, u_max = 0;
+	double l1, r1, l2, r2;	
+	double D_analit = 0;
 	double delta_ro, delta_u, delta_p;
 
-	int* w_num_p, *w_num_r, *w_num_u;
-
 	char FileName[255], FileName2[255], FileName3[255], FileName4[255];
+	double sum_m[4][4] = { 0 };
+	double loop_full[LOOPS] = { 0 };
 
 	FILE *fout, *fout_NC, *fmesh, *file;
-
-	double sum_m[4][4] = { 0 };
-
-	int check1 = 0, check2 = 0, check3 = 0, check5[5] = { 0 };
-
-	double riemann_U, riemann_P, riemann_D[2];
-
-	double *diff; //память под массив выделяется внутри функции
-
-	double u1 = 0, u2 = 0, u3 = 0, u_loc = 0, u_max = 0;
-
-	double loop_full[LOOPS] = { 0 };
 
 	/* Set number of cells */
 	numcells = nmesh[numb];	//	N = 100 * 3^K = 100 * 3^(NUM_MESH)
@@ -122,15 +111,10 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	diff_S = (double*)_mm_malloc(numcells * sizeof(double), 32);
 	diff_RE = (double*)_mm_malloc(numcells * sizeof(double), 32);
 
-	w_num_p = new int[N_smooth];
-	w_num_r = new int[N_smooth];
-	w_num_u = new int[N_smooth];
-
-
-	sw1_num_p = new int[N_smooth]; sw2_num_p = new int[N_smooth]; sw3_num_p = new int[N_smooth];
-	sw1_num_r = new int[N_smooth]; sw2_num_r = new int[N_smooth]; sw3_num_r = new int[N_smooth];
-	sw1_num_u = new int[N_smooth]; sw2_num_u = new int[N_smooth]; sw3_num_u = new int[N_smooth];
-
+	int w_num_p[N_smooth];
+	int w_num_r[N_smooth]; 
+	int w_num_u[N_smooth]; 
+	
 	FR = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
 	FRU = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
 	FRP = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
@@ -145,17 +129,9 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	w_num_r[0:N_smooth] = 0;
 	w_num_u[0:N_smooth] = 0;
 
-	sw1_num_p[0:N_smooth] = 0;
-	sw2_num_p[0:N_smooth] = 0;
-	sw3_num_p[0:N_smooth] = 0;
-
-	sw1_num_u[0:N_smooth] = 0;
-	sw2_num_u[0:N_smooth] = 0;
-	sw3_num_u[0:N_smooth] = 0;
-
-	sw1_num_r[0:N_smooth] = 0;
-	sw2_num_r[0:N_smooth] = 0;
-	sw3_num_r[0:N_smooth] = 0;
+	sw1_num[0:3][0:N_smooth] = 0;
+	sw2_num[0:3][0:N_smooth] = 0;
+	sw3_num[0:3][0:N_smooth] = 0;
 
 	double t_flux[N_bound] = { 0 };
 
@@ -204,7 +180,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	}
 
 	/* To get some information before the start */
-	inf_before_start(numcells, R, U, P);
+	inf_before_start(numcells, R, U, P, D_analit);
 
 	timer = 0.0;
 
@@ -385,12 +361,12 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 		outline_integral_riemann(numcells, timer, tau, T1, T2, X1, X2, diff_R, diff_U, diff_P, diff_RE, diff_S, sum_m); //difference num and exact
 #endif
 #endif
-		/* Output during computations */
+		/* Output to file during computations */
 #ifdef OUTPUT_N_SMOOTH
 #if (PROBLEM == 18)
 		gnuplot_n_smooth_steps(numcells, timer, tau, x_layer, R, U, P, RE, S, S_diff, UFLUX);
 #else
-	//	gnuplot_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, UFLUX);
+		gnuplot_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, UFLUX);
 #endif
 #endif
 		/* Euler coordinates */
@@ -415,7 +391,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 #if (PROBLEM==2 || PROBLEM==9)
 	gnuplot_analitical_riemann2(numcells, w_num_r, w_num_u, w_num_p);
 #else
-	gnuplot_n_smooth2(numcells, sw1_num_r, sw1_num_u, sw1_num_p, sw2_num_r, sw2_num_u, sw2_num_p, sw3_num_r, sw3_num_u, sw3_num_p);
+	gnuplot_n_smooth2(numcells, sw1_num, sw2_num, sw3_num);
 #endif
 #endif
 
@@ -477,48 +453,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 
 
 #ifndef OUTPUT_N_SMOOTH
-#ifndef RP
-	sprintf(FileName, "N%04d_P%1d_SLV%1d_TERM%.0lf.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
-	fout = fopen(FileName, "w");
-#else
-	sprintf(FileName, "RP_N%04d_P%1d_SLV%1d_TERM%.0lf.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
-	fout = fopen(FileName, "w");
-#endif
-
-
-#ifdef FIRST
-	for (i = start_print; i < numcells; i += jump_print)  // вывод всегда по 100 точек ( с первой итерации которые )
-#else
-	for (i = 0; i < numcells; i++)  // вывод всегда по 100 точек ( с первой итерации которые )
-#endif
-	{
-		x = i*dx + 0.5*dx;
-#if (PROBLEM==0)
-		x_NC = (i*dx + 0.5*dx) - D_analit*time_max_array[0];  //NC
-#elif (PROBLEM==1)
-		x_NC = (i*dx + 0.5*dx - 0.1) / (time_max_array[0] * (numb + 1));  //NC
-#endif
-
-																		  /********************************************************************************************************************************
-																		  | 1 |    2    |   3   |     4    |          5        |         6       |      7      |          8        |      9       |   10  |
-																		  | x | density | speed | pressure | velocity of sound |       entropy   |      term    |	                 |   pg/pg_max  | h_pow |
-																		  ********************************************************************************************************************************/
-		ds = R[i];
-		us = U[i];
-		ps = P[i];
-		cs = sqrt(GAMMA*P[i] / R[i]);
-		ss = log(P[i] / pow(R[i], GAMMA));
-
-
-#ifndef NC
-		fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf \n", x, ds, us, ps, cs, ss);
-#else 
-		//fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %30.24lf %30.24lf %30.24lf \n", x_NC, ds, us, ps, cs, es, rp, pg, hh);
-		fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf\n", x_layer_NC[i], ds, us, ps, cs, ss);
-#endif
-
-	}
-
+	gnuplot_last_step(numcells, dx, D_analit, R, U, P);
 #endif
 
 	/* Analysis after count on one iteration */
@@ -554,10 +489,5 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 
 	fclose(file);
 
-#ifdef PRINT	
-#ifndef OUTPUT_N_SMOOTH
-	fclose(fout);
-#endif
-#endif
 
 }
