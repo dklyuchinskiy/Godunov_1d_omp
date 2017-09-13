@@ -1453,80 +1453,81 @@ void analitical_riemann_modeling(int numcells, double ro1, double u1, double p1,
 	free(xx);
 }
 
-void difference_analitical_riemann_Linf(int numb, double* R, double*U, double*P, double* R_D, double*R_U, double*R_P, double &delta_ro, double &delta_u, double &delta_p)
+void difference_analitical_riemann_Linf(int numb, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P, double &delta_ro, double &delta_u, double &delta_p)
 {
-	double *x_lay = new double[nmesh[numb]];
-	x_lay[0:nmesh[numb]] = 0;
-
 	double dx = LENGTH / double(nmesh[numb]);
-	double* difference_D;
-	double* difference_U;
-	double* difference_P;
+	double *x_lay;
+	double *difference_R;
+	double *difference_U;
+	double *difference_P;
 
+	int new_numcells = int(0.41*nmesh[numb]);
+
+	mem_alloc(nmesh[numb], &x_lay, 32);
+	mem_alloc(new_numcells, &difference_R, 32);
+	mem_alloc(new_numcells, &difference_U, 32);
+	mem_alloc(new_numcells, &difference_P, 32);
+
+	x_lay[0:nmesh[numb]] = 0;
 	delta_ro = 0;
 	delta_u = 0;
 	delta_p = 0;
 
-	int new_numcells = int(0.41*nmesh[numb]);
 
-	difference_P = new double[new_numcells];
-	difference_U = new double[new_numcells];
-	difference_D = new double[new_numcells];
-
+#pragma omp parallel for simd schedule(simd: static)
 	for (int i = 0; i < new_numcells; i++)
 	{
 		x_lay[i] = i*dx + 0.5*dx;
-		difference_D[i] = fabs(R[i] - R_D[i]);
+		difference_R[i] = fabs(R[i] - R_D[i]);
 		difference_U[i] = fabs(U[i] - R_U[i]);
 		difference_P[i] = fabs(P[i] - R_P[i]);
 	}
 
 	for (int i = 0; i < new_numcells; i++)
 	{
-		if (difference_D[i]>delta_ro) delta_ro = difference_D[i];
-		if (difference_U[i]>delta_u) delta_u = difference_U[i];
-		if (difference_P[i]>delta_p) delta_p = difference_P[i];
+		if (difference_R[i] > delta_ro) delta_ro = difference_R[i];
+		if (difference_U[i] > delta_u) delta_u = difference_U[i];
+		if (difference_P[i] > delta_p) delta_p = difference_P[i];
 	}
 
-	delta_ro = delta_ro*dx;
-	delta_u = delta_u*dx;
-	delta_p = delta_p*dx;
+	delta_ro = delta_ro * dx;
+	delta_u = delta_u * dx;
+	delta_p = delta_p * dx;
 
-	free(x_lay);
+	mem_free(&x_lay);
+	mem_free(&difference_P);
+	mem_free(&difference_R);
+	mem_free(&difference_U);
 }
 
-void difference_analitical_riemann_L1(int numb, double* R, double*U, double*P, double* R_D, double*R_U, double*R_P, double &sum_ro, double &sum_u, double &sum_p)
+void difference_analitical_riemann_L1(int numb, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P, double &sum_ro, double &sum_u, double &sum_p)
 {
-	double *x_lay = new double[nmesh[numb]];
-	x_lay[0:nmesh[numb]] = 0;
-
 	double dx = LENGTH / double(nmesh[numb]);
-	double* difference_D;
-	double* difference_U;
-	double* difference_P;
-
-	sum_ro = 0;
-	sum_u = 0;
-	sum_p = 0;
+	double *x_lay;
+	double *difference_R;
+	double *difference_U;
+	double *difference_P;
 
 	int new_numcells = int(0.41*nmesh[numb]);
 
-	difference_P = new double[new_numcells];
-	difference_U = new double[new_numcells];
-	difference_D = new double[new_numcells];
+	mem_alloc(nmesh[numb], &x_lay, 32);
+	mem_alloc(new_numcells, &difference_R, 32);
+	mem_alloc(new_numcells, &difference_U, 32);
+	mem_alloc(new_numcells, &difference_P, 32);
 
+#pragma omp parallel for simd schedule(simd: static)
 	for (int i = 0; i < new_numcells; i++)
 	{
 		x_lay[i] = i*dx + 0.5*dx;
-		difference_D[i] = fabs(R[i] - R_D[i]);
+		difference_R[i] = fabs(R[i] - R_D[i]);
 		difference_U[i] = fabs(U[i] - R_U[i]);
 		difference_P[i] = fabs(P[i] - R_P[i]);
 	}
 
-
+#pragma omp parallel for reduction(+:sum_ro,sum_u,sum_p)
 	for (int i = 0; i < new_numcells; i++)
 	{
-		sum_ro += difference_D[i];
+		sum_ro += difference_R[i];
 		sum_u += difference_U[i];
 		sum_p += difference_P[i];
 	}
@@ -1535,7 +1536,10 @@ void difference_analitical_riemann_L1(int numb, double* R, double*U, double*P, d
 	sum_u = sum_u * dx;
 	sum_p = sum_p * dx;
 
-	free(x_lay);
+	mem_free(&x_lay);
+	mem_free(&difference_P);
+	mem_free(&difference_R);
+	mem_free(&difference_U);
 }
 
 /* 0 - U, 1 - P, 2 - D */
