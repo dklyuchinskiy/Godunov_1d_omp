@@ -38,7 +38,6 @@ void difference_SW(int numcells, double timer, double *R, double *U, double *P, 
 void outline_integral_riemann(int numcells, double timer, double tau, const double tt1, const double tt2, double xx1, double xx2, double* R, double*U, double*P, double*RE, double*S, /*output*/ double sum[4][4]);
 void file_exact_diff(int numcells, double *exact_R, double *exact_U, double *exact_P, double *exact_RE, double *exact_S, double *diff_R, double *diff_U, double *diff_P, double time);
 void inf_before_start(int numcells, double *R, double *U, double *P, double &D_analit);
-void iteration_bound(int numb);
 void first_step_validation(FILE *file, int numcells, int c_c, double timer, double *R, double *U, double *P, double *dss, double *uss, double *pss);
 
 // Gnuplot

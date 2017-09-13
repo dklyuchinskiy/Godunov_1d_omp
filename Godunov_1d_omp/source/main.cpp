@@ -19,14 +19,14 @@ int main()
 	run[1] = 1;
 	run[2] = 0;
 	run[3] = 0;
-	run[4] = 0;
+	run[4] = 1;
 	run[5] = 0;
 	run[6] = 0;
 #endif
 
 #if 1
 
-	start = clock(); // start of program's work
+	start = clock();
 	for (i = 0; i < NUM_ITER; i++) // Iterations   //there is dependence between iterations!!! its impossible to start new iteration before last ends
 	{
 #ifdef OTKOL
@@ -34,52 +34,19 @@ int main()
 #else
 		if (run[i] == 1) iteration(i, F_ro, ITER_TIME);
 #endif
-		printf("Printing...\n");
 
 		/******************Different settings and tasks***************************/
 
-#ifdef PRINT
-#ifdef SIMPLE
+#if (defined(PRINT) && defined(SIMPLE))
 		gnuplot_one_iteration(nmesh[i]);
-#endif
-#ifdef OUTPUT_N_SMOOTH
-#ifndef NC
-	//	gnuplot_n_smooth(i);
-#else
-	//	gnuplot_n_smooth_NC(i);
-#endif
-#endif
-
-#ifdef RW_NUM_ANALITICAL
-#if(PROBLEM==1)
-		//	gnuplot_RW_DIFF(nmesh[i]);
-		gnuplot_RW_NUM_ANALITIC(nmesh[i]);
-#endif
-#endif
-
-#if (PROBLEM==2)
-	//	gnuplot_conservative(i);
-
-#endif
-#if (PROBLEM==3)
-#ifdef FIVE_T_STEPS
-		gnuplot_five_t_steps(i);
-#endif
-#endif
 #endif
 	}
 
 	double duration;
 	duration = (double)(clock() - start) / CLOCKS_PER_SEC;
 
-#ifdef PRINT
-#ifdef NC
-	gnuplot_one_it_NC();  // i - current number of iterations
-#endif
-#endif
-	printf("good\n");
-	/******************Different settings and tasks***************************/
 	int ldf = 4;
+
 #ifdef INTEGRAL
 	for (i = 0; i < NUM_ITER; i++)
 	{
@@ -110,7 +77,8 @@ int main()
 	printf("Entropy\n");
 	runge(F_ro, ldf, 3);
 #endif
-	printf("\n**************************\n");
+
+	printf("\n************************************\n");
 	for (int i = 0; i < NUM_ITER; i++)
 		printf("Iter %d time: %lf\n", i + 1, ITER_TIME[i]);
 

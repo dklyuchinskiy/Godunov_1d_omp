@@ -388,7 +388,6 @@ void gnuplot_n_smooth3(int numcells)
 			if (i == 4)	fprintf(plot, "set ylabel \"entropy\"\n");
 
 #endif
-
 			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
 
 			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title 'exact RP', \
@@ -404,7 +403,6 @@ void gnuplot_n_smooth3(int numcells)
 	return;
 }
 
-
 void gnuplot_one_iteration(int numcells) //together with analitical solution
 {
 	FILE *plot;
@@ -416,34 +414,32 @@ void gnuplot_one_iteration(int numcells) //together with analitical solution
 	{
 		plot = fopen("Plot_new.plt", "w");
 		fprintf(plot, "reset\n\
-					  					  					  clear\n\n\
-															  										  					  ###################################\n\
-																														  															  					  set term png font \"Times-Roman, 16\"\n\n\
-																																																		  																				  					  ##################################\n\n");
+					   clear\n\n\
+					   ###################################\n\
+						set term png font \"Times-Roman, 16\"\n\n\
+						##################################\n\n");
 #ifdef NC
 #if (PROBLEM==0)
 		fprintf(plot, "set xrange[-0.3:0.7]\n\n");
 		fprintf(plot, "set yrange[%3.2f:%9.7f]\n\
-					  					  					  set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n\
-															  										  					  plot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle\n\n", left_SW[i], right_SW[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+					   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n\
+					   plot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle\n\n", left_SW[i], right_SW[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
 #elif (PROBLEM==1)
 		fprintf(plot, "set xrange[0:5]\n\n");
 		fprintf(plot, "set yrange[%3.2f:%9.7f]\n\
-					  					  					  set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n\
-															  										  					  plot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle", left_RW[i], right_RW[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+					   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n\
+					   plot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle", left_RW[i], right_RW[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
 #elif(PROBLEM==2)
 		fprintf(plot, "set xrange[0:5]\n\n");
 		fprintf(plot, "set yrange[%3.2f:%9.7f]\n\
-					  					  					  					  set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n\
-																				  															  										  					  plot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle", left_RW[i], right_RW[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+					   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n\
+					   plot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle", left_RW[i], right_RW[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
 
 #endif
 #else
 		fprintf(plot, "set xrange[0:1]\n\n");
 #if (PROBLEM==0)
 		fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_SW[i], right_SW[i]);
-		//analitical_SW_file(plot, initial_pressure(0.05), initial_density(0.05), initial_velocity(0.05), initial_pressure(0.2), initial_density(0.2), initial_velocity(0.2), iter); - старое аналитическое решение, когда перекидывали начальные данные
-		//		analitical_SW_file(plot, initial_pressure(0.05), initial_density(0.05), initial_velocity(0.05), initial_pressure(0.2), initial_density(0.2), initial_velocity(0.2));
 #elif (PROBLEM==1)
 		fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_RW[i], right_RW[i]);
 		analitical_RW(plot, initial_pressure(0.05), initial_density(0.05), initial_velocity(0.05), initial_pressure(0.2), initial_density(0.2), initial_velocity(0.2), iter);  // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
@@ -493,10 +489,10 @@ void gnuplot_RW_DIFF(int numcells)
 
 	plot = fopen("Plot_RW_DIFF.plt", "w");
 	fprintf(plot, "reset\n\
-				  				  				  				  clear\n\n\
-																  												  								  				  ###################################\n\
-																																								  																								  												  				  set term png font \"Times-Roman, 16\"\n\n\
-																																																																																  																																								  																  				  ##################################\n\n");
+				   clear\n\n\
+				   ##################################\n\
+  				   set term png font \"Times-Roman, 16\"\n\n\
+				   ##################################\n\n");
 #ifndef NC
 	fprintf(plot, "set xrange[0:1]\n\n");
 #else
@@ -504,8 +500,8 @@ void gnuplot_RW_DIFF(int numcells)
 	fprintf(plot, "set xrange[0:2]\n\n");
 #endif
 	fprintf(plot, "set yrange[-0.2:0.2]\n\
-				  				  				  set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_RW_DIFF_U.png'\n\
-												  								  				  plot 'N%04d_RW_difference.dat' using 1 : 2 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells);
+				   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_RW_DIFF_U.png'\n\
+												  plot 'N%04d_RW_difference.dat' using 1 : 2 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells);
 	fprintf(plot, "set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_RW_DIFF_P.png'\n\
 				  				  				  plot 'N%04d_RW_difference.dat' using 1 : 3 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells);
 	fprintf(plot, "set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_RW_DIFF_R.png'\n\
@@ -549,14 +545,14 @@ void gnuplot_P_PLUS_PG(int numcells)
 
 	plot = fopen("Plot_P_PLUS_PG.plt", "w");
 	fprintf(plot, "reset\n\
-				  				  				  clear\n\n\
-												  								  				  ###################################\n\
-																								  												  				  set term png font \"Times-Roman, 16\"\n\n\
-																																								  																  				  ##################################\n\n");
+				   clear\n\n\
+				   ###################################\n\
+				   set term png font \"Times-Roman, 16\"\n\n\
+				   #################################\n\n");
 	fprintf(plot, "set xrange[-0.1:0.3]\n\n");
 	fprintf(plot, "set yrange[-0.1:1.5]\n\
-				  				  				  set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG.png'\n\
-												  								  				  plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG_NC.dat' using 1 : 2 w l lw 3 notitle, 'N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG_NC.dat' using 1 : 3 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
+				   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG.png'\n\
+				   plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG_NC.dat' using 1 : 2 w l lw 3 notitle, 'N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG_NC.dat' using 1 : 3 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
 
 	fclose(plot);
 	system("Plot_P_PLUS_PG.plt");
@@ -568,9 +564,9 @@ void gnuplot_all_iterations_NC(int numb)
 	FILE *plot;
 	plot = fopen("Plot_new_all_iterations.plt", "w");
 	fprintf(plot, "reset\n\
-				  				  clear\n\n\
-								  				  set term png font \"Times-Roman, 16\"\n\n\
-												  				  																												  																				  					  ##################################\n\n");
+				   clear\n\n\
+				   set term png font \"Times-Roman, 16\"\n\n\
+				   ##################################\n\n");
 	for (int i = 0; i < 3; i++)  // choosing gas property
 	{
 #if (PROBLEM==0)
@@ -903,8 +899,7 @@ void gnuplot_analitical_riemann(int numcells, double* R, double*U, double*P, dou
 
 void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 {
-	FILE* fout;
-	FILE* plot;
+	FILE* fout, *plot;
 	char name1[255], name2[255];
 	double dx = LENGTH / double(numcells);
 	double ds, us, ps, x;
@@ -942,7 +937,6 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 			fprintf(plot, "set xrange[-0.5:0.5]\n\n"); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
 #endif		
 #endif
-													   /*--------------------------------------------*/
 
 #ifndef NC
 #if PROBLEM!=9

@@ -11,7 +11,6 @@
 //#define NC printf("Coordinates of shockwave is setted up\n");  // It influences on output in .dat file
 //#define NC2 prog // (x-x0-Dt)/h
 
-
 //#define FIRST printf("The first output: only first 100 dots\n"); // For 1 task: NC, SECOND 
 #define SECOND printf("The second output: printing all dots\n");
 #define PRINT printf("Printing with GNUPLOT is set up\n");
@@ -20,29 +19,26 @@
 //#define RW_NUM_ANALITICAL  printf("We are conculating the difference between numeric and analitical solvers\n")   // если установлен этот макрос, то print не нуженropy 
 //#define ENTROPY_RP  printf("Right parts are in entropy equation. We are calculating through entropy conservation law.");
 //#define SIMPLE printf("The simple print")
-//#define MY_OFFLOAD  printf("GFX offload")
 //#define INTEGRAL printf("Integrals are computed")
 //#define FIVE_T_STEPS
 #define OUTPUT_N_SMOOTH
 //#define DIFF_ANALIT_RIEMANN
-//#define PRINT_TAU
-//#define BOOST_VEC
 //#define BOOST
 #define OMP
 //#define RP
-//#define L1-NORM
+//#define L1_NORM
 //#define ENTROPY_CHECK
 //#define SW_POINTS_PRINT
 //#define CFL_SWITCH
 //#define DIFF_ANALYT
 
 #if (PROBLEM < 3 || PROBLEM == 7)
-#define FLUX_COUNT
+//#define FLUX_COUNT
 #endif
 
 //#define BOUND_COND
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef INTEGRAL
 #define RUNGE
@@ -117,9 +113,7 @@
 #define DELTA 0.005
 #endif
 
-
-#define CFL	  0.4		// cfl number       изменили CFL с 0.4 до 0.8 - пересчитать порядки точности!
-#define CFL04 CFL
+#define CFL04 0.4
 #define CFL08 0.8
 
 // взять меньшие Куранты!
@@ -131,8 +125,6 @@
 #define GAMMA 1.4
 #define R0 8.93
 #define C0 3.97
-
-
 
 #define C1 1.0
 
@@ -189,8 +181,6 @@
 #define st_th_R1 gyugonio(st_th_P2, st_th_R2, st_th_P1)
 #define st_th_U1 ((sw_speed2(st_th_R2, st_th_U2, st_th_P2, st_th_R1, st_th_P1)*(1.0 - (st_th_R2)/(st_th_R1))) + ((st_th_R2)*(st_th_U2)/(st_th_R1)))
 
-
-
 // если в точном распаде есть характеристика с нулевой скоростью то линейный распад непременим! не имеем право применять линейный распад!
 // в этом случае толькой нелинейный распад!
 // линеаризировать можно, только знать когда!
@@ -245,20 +235,10 @@
 #define NUM_MESH	4			// number of mesh
 
 extern char prop[];
-
+extern char dip[];
 extern double time_max_array[];
-
-extern double inflections[];
-
-extern double boundary[][3];
-
-extern char dip[3];
-
 extern float percents[NUM_ITER];
-
-extern double LOOP_TIME[][OMP_CORES];
-extern double delta_D[], delta_U[], delta_P[];
-extern double l1_D[], l1_U[], l1_P[];
+extern double LOOP_TIME[LOOPS][OMP_CORES];
 
 // arrays.cpp
 
@@ -312,6 +292,12 @@ extern float right_RW3_RW3[];
 
 extern float left_RP[];
 extern float right_RP[];
+
+// iteration.cpp
+// R U P
+
+extern double delta_RUP[3][NUM_ITER];
+extern double l1_RUP[3][NUM_ITER];
 
 
 

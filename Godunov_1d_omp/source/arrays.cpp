@@ -1,7 +1,7 @@
 #include "definitions.h"
 #include "support.h"
 
-/***** Константы из показателя адиабаты *****/
+/***** Constants *****/
 double
 g1 = (GAMMA - 1.0) / (2.0*GAMMA),
 g2 = (GAMMA + 1.0) / (2.0*GAMMA),
@@ -12,10 +12,8 @@ g6 = (GAMMA - 1.0) / (GAMMA + 1.0),
 g7 = (GAMMA - 1.0) / 2.0,
 g8 = GAMMA - 1.0;
 
-
-/**************************************************/
-
 char prop[6] = { 'R', 'U', 'P', 'C', 'S', 'D' };
+double LOOP_TIME[LOOPS][OMP_CORES] = { 0 };
 
 #ifdef SW_POINTS_PRINT
 double time_max_array[21] = { 0.5, 0.5, 0.5, 1.00, 0.5, 4.0, 0.6, 8.0, 0.4, 0.2, 0.3, 0.3, 0.2, 0.15, 0.012, 0.035, 0.012, 4.0, 0.5. 8, 0.5 };
@@ -25,7 +23,7 @@ double time_max_array[21] = { 0.6, 0.5, 0.3, 1.00, 0.5, 4.0, 0.6, 0.2, 0.5, 0.2,
 
 //				  0    1    2    3     4     5      6      7       8   9
 #if (GRID == 3)
-int nmesh[10] = { 100, 300, 900, 2700, 8100, 24400, 32768, 218700, 656100 };
+int nmesh[10] = { 100, 300, 900, 2700, 8100, 24300, 32768, 218700, 656100 };
 #elif (GRID == 2)
 int nmesh[10] = { 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200 };
 #endif
@@ -80,7 +78,9 @@ float left_RP[3] = { 0, 0, 0 };
 float right_RP[3] = { 4, 4, 4 };
 
 char dip[3] = { 'D', 'I', 'P' };
-
 float percents[NUM_ITER];
 
-double boundary[NUM_ITER][3] = { 0 };
+// iteration.cpp
+
+double delta_RUP[3][NUM_ITER] = { 0 };
+double l1_RUP[3][NUM_ITER] = { 0 };
