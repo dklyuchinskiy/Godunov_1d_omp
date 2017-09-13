@@ -1328,7 +1328,7 @@ void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P)
 void analitical_riemann_modeling(int numcells, double ro1, double u1, double p1, double ro2, double u2, double p2, double timer,
 	/*output*/double *all_d, double *all_u, double *all_p)
 {
-	double static P, U; //solution of Riemann problem
+	static double P, U; //solution of Riemann problem
 	double R1, R2;
 	int numcells2 = numcells / 2;
 	double c1, C, prop, r0, A, tt;
@@ -1665,7 +1665,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 
 	if (timer >= tt2 && check2 == 0)
 	{
-//#pragma omp parallel for simd reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided) num_threads(OMP_CORES)
+#pragma omp parallel for simd reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided) num_threads(OMP_CORES)
 		for (int i = 0; i < numcells; i++)
 		{
 			if (xx[i] >= xx1 && xx[i] <= xx2)
@@ -1762,10 +1762,8 @@ void inf_before_start(int numcells, double *R, double *U, double *P, double &D_a
 
 double* finite_difference(int numb, double *mas)
 {
-	int val;
-	val = nmesh[numb];
-	double *dif;
-	dif = new double[val - 2];
+	int val = nmesh[numb];
+	double *dif = new double[val - 2];
 	int check = 0;
 	long int p = 0;
 	long int m = 0;
