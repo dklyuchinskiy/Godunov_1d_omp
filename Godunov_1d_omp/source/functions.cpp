@@ -616,7 +616,7 @@ double initial_density(double x)
 	{
 	case 19:
 	case 18:
-	case 0:	if (x <= DISC_POINT)                  // разрыв значений в начальный момент времени в точке x=0.2 ( для задачи с УВ )
+	case 0:	if (x <= DISC_POINT)         
 		return 1.271413930046081;
 			else
 				return 1.0;
@@ -658,18 +658,18 @@ double initial_density(double x)
 	case 11: if (x <= 0.1) return st_R2;
 			 else if (x <= 0.6) return st_R3;
 			 else 0.2;
-			 // TORO tests
-			 // 1
+		// TORO tests
+		// 1
 	case 12: if (x <= DISC_POINT) return 1.0;
 			 else return 0.125;
-			 // 2
+		// 2
 	case 13: return 1.0;
 		// 3
 	case 14: return 1.0;
 		// 4
 	case 15: if (x <= DISC_POINT) return 5.99924;
 			 else return 5.99242;
-			 // 5
+		// 5
 	case 16: return 1.0;
 	case 17:	if (x <= 5.0) return 2.0;
 				else return 1.0;
@@ -729,19 +729,19 @@ double initial_pressure(double x)
 			 else return st_th_P2;
 	case 11: if (x <= 0.1) return st_P2;
 			 else return st_P3;
-			 // TORO tests
-			 // 1
+		// TORO tests
+		// 1
 	case 12: if (x <= DISC_POINT) return 1.0;
 			 else return 0.1;
-			 // 2
+		// 2
 	case 13: return 0.4;
 		// 3
 	case 14: if (x <= DISC_POINT) return 1000.0;
 			 else return 0.01;
-			 // 4
+		// 4
 	case 15: if (x <= DISC_POINT) return 460.894;
 			 else return 46.095;
-			 // 5
+		// 5
 	case 16: if (x <= DISC_POINT) return 1000.0;
 			 else return 0.01;
 	case 17: if (x <= 5.0) return 2.0;
@@ -802,19 +802,19 @@ double initial_velocity(double x)
 			 //case 10: return -0.8*tanh(2 * PI*(x - 0.5)) + 0.8; // strong
 	case 11: if (x <= 0.1) return st_U2;
 			 else return st_U3;
-			 // TORO tests
-			 // 1
+		// TORO tests
+		// 1
 	case 12: if (x <= DISC_POINT) return 0.75;// +0.2;// +0.4533;
 			 else return 0.0;// +0.2;// 0.4533;
-			 // 2
+		// 2
 	case 13: if (x <= DISC_POINT) return -2.0;
 			 else return 2.0;
-			 // 3
+		// 3
 	case 14: return 0.0;
 		// 4
 	case 15: if (x <= DISC_POINT) return 19.5975;
 			 else return -6.19633;
-			 // 5
+		// 5
 	case 16: return -19.59745;
 	case 17: return 0.0;
 	case 20: if (x <= 0.00) return st_U1;
@@ -969,14 +969,11 @@ void analitical_riemann(int numcells, double p1, double ro1, double u1, double p
 	double c1; // давление, плотность, скорость СЛЕВА
 	double c2; // давление, плотность, скорость СПРАВА
 
-
-
 	c1 = sqrt(GAMMA*p1 / ro1);
 	c2 = sqrt(GAMMA*p2 / ro2);
 
 	double a1; // массовая скорость слева
 	double a2; // массовая скорость справа
-
 
 	double P_prev = 0;
 	double P_now = 0;
@@ -986,10 +983,13 @@ void analitical_riemann(int numcells, double p1, double ro1, double u1, double p
 	double h1 = 0, h2 = 0;
 	int l = 0;  //счетчик
 
+	double fi_P1 = 0;
+	double alfa = 0;
+	double help = 0, h3 = 0, h4 = 0;
+	double z = 0;
+
 	P_prev = 20; // P_prev > p1 и P_prev > p2;    ударные волны СЛЕВА и СПРАВА
 
-
-	/////////////// ПЕРЕРАСЧЕТ ПО ВИДОИЗМЕНЕННЫМ ФОРМУЛАМ///////////////////////////
 	do
 	{
 		if (P_prev > p1) a1 = sqrt(ro1*((GAMMA + 1)*P_prev / 2.0 + (GAMMA - 1)*p1 / 2.0));
@@ -1002,7 +1002,7 @@ void analitical_riemann(int numcells, double p1, double ro1, double u1, double p
 		}
 		drob = 0;
 
-		if (P_prev>p2) a2 = sqrt(ro2*((GAMMA + 1)*P_prev / 2.0 + (GAMMA - 1)*p2 / 2.0));
+		if (P_prev > p2) a2 = sqrt(ro2*((GAMMA + 1)*P_prev / 2.0 + (GAMMA - 1)*p2 / 2.0));
 		else
 		{
 			h2 = (GAMMA - 1) / (2.0 * GAMMA);
@@ -1012,17 +1012,11 @@ void analitical_riemann(int numcells, double p1, double ro1, double u1, double p
 		}
 		drob = 0;
 
-		double fi_P1 = 0;
-		double alfa = 0;
-		double help = 0, h3 = 0, h4 = 0;
-		double z = 0;
-
-
 		z = P_prev / (p1 + p2);
 		h3 = (GAMMA + 1) / 2.0 / GAMMA;
 		h4 = (GAMMA - 1) / 2.0 / GAMMA;
 		help = ((GAMMA - 1) / 3.0 / GAMMA)*((1.0 - z) / (pow(z, h3)*(1.0 - pow(z, h4)))) - 1;
-		if (help>0) alfa = help;
+		if (help > 0) alfa = help;
 		else alfa = 0;
 		fi_P1 = (a2*p1 + a1*p2 + a1*a2*(u1 - u2)) / (a1 + a2);
 		P_now = (alfa*P_prev + fi_P1) / (1 + alfa);
@@ -1035,13 +1029,11 @@ void analitical_riemann(int numcells, double p1, double ro1, double u1, double p
 		P_now = 0;
 
 		l++;
-	} while (fabs(delta)>0.0000001);
+
+	} while (fabs(delta) > 0.0000001);
 
 	*sol_p = P_prev;
 	*sol_u = (a1*u1 + a2*u2 + p1 - p2) / (a1 + a2);
-
-
-	//	printf("Pressure: %lf\nSpeed: %lf\nIterations: %i\n", *sol_p, *sol_u, l);
 }
 
 void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P)
@@ -1392,12 +1384,10 @@ void analitical_riemann_modeling(int numcells, double ro1, double u1, double p1,
 
 void difference_analitical_riemann_Linf(int numb, double* R, double*U, double*P, double* R_D, double*R_U, double*R_P, double &delta_ro, double &delta_u, double &delta_p)
 {
-	double *x_lay;
-	x_lay = new double[nmesh[numb]];
+	double *x_lay = new double[nmesh[numb]];
 	x_lay[0:nmesh[numb]] = 0;
 
-	double dx;
-	dx = LENGTH / double(nmesh[numb]);
+	double dx = LENGTH / double(nmesh[numb]);
 	double* difference_D;
 	double* difference_U;
 	double* difference_P;
@@ -1430,16 +1420,16 @@ void difference_analitical_riemann_Linf(int numb, double* R, double*U, double*P,
 	delta_ro = delta_ro*dx;
 	delta_u = delta_u*dx;
 	delta_p = delta_p*dx;
+
+	free(x_lay);
 }
 
 void difference_analitical_riemann_L1(int numb, double* R, double*U, double*P, double* R_D, double*R_U, double*R_P, double &sum_ro, double &sum_u, double &sum_p)
 {
-	double *x_lay;
-	x_lay = new double[nmesh[numb]];
+	double *x_lay = new double[nmesh[numb]];
 	x_lay[0:nmesh[numb]] = 0;
 
-	double dx;
-	dx = LENGTH / double(nmesh[numb]);
+	double dx = LENGTH / double(nmesh[numb]);
 	double* difference_D;
 	double* difference_U;
 	double* difference_P;
@@ -1472,9 +1462,11 @@ void difference_analitical_riemann_L1(int numb, double* R, double*U, double*P, d
 		sum_p += difference_P[i];
 	}
 
-	sum_ro = sum_ro*dx;
-	sum_u = sum_u*dx;
-	sum_p = sum_p*dx;
+	sum_ro = sum_ro * dx;
+	sum_u = sum_u * dx;
+	sum_p = sum_p * dx;
+
+	free(x_lay);
 }
 
 /* 0 - U, 1 - P, 2 - D */
@@ -1523,7 +1515,7 @@ double RW_prop(int digit, double x, double numb, double ip_l, double id_l, doubl
 	return 0;
 }
 
-void outline_integral_riemann(int numcells, double timer, double tau, double tt1, double tt2, double xx1, double xx2, double* R, double*U, double*P, double*RE, double*S,
+void outline_integral_riemann(int numcells, double timer, double tau, double tt1, double tt2, double xx1, double xx2, double *xx, double* R, double*U, double*P, double*RE, double*S,
 	/*output*/ double sum[4][4])
 {
 	int static check1 = 0;
@@ -1551,14 +1543,12 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 	}
 
 	double dx = LENGTH / double(numcells);
-	double *xx = new double[numcells];
 	int omp_chuck = numcells / OMP_CORES;
 
 	if (timer >= tt1 && timer <= tt2)
 	{
 		int l_bound = int((xx1 - 0.5*dx) / dx);
 		int r_bound = int((xx2 - 0.5*dx) / dx);
-		//printf("atata: %d %d\n", l_bound, r_bound);
 
 		/*************massa*****************/
 
@@ -1579,12 +1569,6 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 
 		sum_l_E += (RE[l_bound] + P[l_bound]) * U[l_bound] * tau;
 		sum_r_E += (RE[r_bound] + P[r_bound]) * U[r_bound] * tau;
-	}
-
-#pragma omp parallel for num_threads(OMP_CORES) schedule(guided)
-	for (int i = 0; i < numcells; i++)
-	{
-		xx[i] = i*dx + 0.5*dx;
 	}
 
 	if (timer >= tt1 && check1 == 0)
@@ -1641,16 +1625,14 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 	sum[3][1] = sum_l_I;
 	sum[3][2] = sum_l_S;
 	sum[3][3] = sum_l_E;
-
-	free(xx);
 }
 
 void inf_before_start(int numcells, double *R, double *U, double *P, double &D_analit)
 { 
-#if PROBLEM==0
+#if (PROBLEM == 0)
 	D_analit = (R[numcells - 1] * U[numcells - 1] - R[0] * U[0]) / (R[numcells - 1] - R[0]);
 	printf("Analitical speed: %10.8lf\n\n", D_analit);
-#elif PROBLEM == 12
+#elif (PROBLEM == 12)
 	double uc_left, uc_right;
 
 	//	uc_left = U[0] +0.43 - sqrt(GAMMA*P[0] / R[0]);
@@ -1660,7 +1642,7 @@ void inf_before_start(int numcells, double *R, double *U, double *P, double &D_a
 	printf("U-C left: %8.6lf\nU-C right: %8.6lf\nmiddle: %8.6lf\n", uc_left, uc_right, (uc_left + uc_right) / 2);
 	system("pause");
 
-#elif PROBLEM==2
+#elif (PROBLEM == 2)
 	double ro_right = 1.271413930046081;
 	double ro_left = 1.0;
 	double u_right = 0.292868067614595;
@@ -1671,7 +1653,7 @@ void inf_before_start(int numcells, double *R, double *U, double *P, double &D_a
 	//	system("pause");
 
 
-#elif (PROBLEM==8 || PROBLEM==4)
+#elif (PROBLEM == 8 || PROBLEM == 4)
 	/*	printf("-----------OLD WAY----------\n");
 	printf("\n--------first sw-------\n");
 	printf("dens: %lf\n", gyugonio(st_P3, st_R3, st_P2));

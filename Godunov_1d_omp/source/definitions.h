@@ -17,9 +17,8 @@
 //#define P_PLUS_PG printf("Printing new task about pressure and pressure gradient");
 //#define SW_FINITE_DIFF  printf("Its a work with shock wave and right parts. We are determinating the wavelength\n")
 //#define RW_NUM_ANALITICAL  printf("We are conculating the difference between numeric and analitical solvers\n")   // если установлен этот макрос, то print не нуженropy 
-//#define ENTROPY_RP  printf("Right parts are in entropy equation. We are calculating through entropy conservation law.");
 //#define SIMPLE printf("The simple print")
-//#define INTEGRAL printf("Integrals are computed")
+#define INTEGRAL printf("Integrals are computed")
 //#define FIVE_T_STEPS
 #define OUTPUT_N_SMOOTH
 //#define DIFF_ANALIT_RIEMANN
@@ -31,14 +30,12 @@
 //#define SW_POINTS_PRINT
 //#define CFL_SWITCH
 //#define DIFF_ANALYT
+//#define BOUND_COND
+//#define DEBUG
 
 #if (PROBLEM < 3 || PROBLEM == 7)
-//#define FLUX_COUNT
+#define FLUX_COUNT
 #endif
-
-//#define BOUND_COND
-
-//#define DEBUG
 
 #ifdef INTEGRAL
 #define RUNGE
@@ -51,7 +48,6 @@
 
 #define N_smooth 40
 #define N_bound 50
-
 
 #define OMP_CORES 4
 #define LOOPS 6
@@ -116,7 +112,6 @@
 #define CFL04 0.4
 #define CFL08 0.8
 
-// взять меньшие Куранты!
 #define PI			3.1415926535897932
 
 #define A_TERM		1.0			// term = - A * \vec{u} h^{2K-1} (dp/dx)^{2K}
@@ -148,8 +143,8 @@
 */
 
 /***************************************/
-#if PROBLEM==4
-//#define P4_ONE_WAVE
+#if (PROBLEM==4)
+#define P4_ONE_WAVE
 #endif
 
 // SW 1 // SW 2 // SW 3
@@ -181,11 +176,7 @@
 #define st_th_R1 gyugonio(st_th_P2, st_th_R2, st_th_P1)
 #define st_th_U1 ((sw_speed2(st_th_R2, st_th_U2, st_th_P2, st_th_R1, st_th_P1)*(1.0 - (st_th_R2)/(st_th_R1))) + ((st_th_R2)*(st_th_U2)/(st_th_R1)))
 
-// если в точном распаде есть характеристика с нулевой скоростью то линейный распад непременим! не имеем право применять линейный распад!
-// в этом случае толькой нелинейный распад!
-// линеаризировать можно, только знать когда!
-// но это не снимает вопросов которые поставлены, схема применима не всегда
-
+/* Define point of discontinuity */
 #if (PROBLEM==0 || PROBLEM==1)
 #define DISC_POINT 0.1         // 0.3 - rarification wave test
 #elif (PROBLEM == 2 || PROBLEM == 9)
@@ -224,6 +215,7 @@
 #define DISC_POINT 0.0
 #endif
 
+/* Define length of a problem */
 #if (PROBLEM == 5 || PROBLEM == 17)
 #define LENGTH 10.0
 #elif (PROBLEM == 19)
@@ -242,7 +234,6 @@ extern double LOOP_TIME[LOOPS][OMP_CORES];
 
 // arrays.cpp
 
-//				 0    1    2    3     4     5      6      7       8
 extern int nmesh[];
 extern int nprnt[];
 

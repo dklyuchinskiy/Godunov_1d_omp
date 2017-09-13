@@ -1,27 +1,27 @@
 #include "definitions.h"
 #include "support.h"
 
-
-
 void iteration(int numb, double F_ro[], double ITER_TIME[])
 {
-	double *R, *R1, *R2,       // density
-		*P, *P1, *P2,		   // pressure
-		*U, *U1, *U2,		   // velocity
-		*S, *S_diff, *S_prev,  // entropy
-		*RU, *RU1, *RU2,       // moment of impulse
-		*RE, *RE1, *RE2;	   // total energy
+	double *R,				   // density
+		   *P,				   // pressure
+	       *U,  			   // velocity
+     	   *RU,				   // moment of impulse
+    	   *RE,			       // total energy
+	       *S,				   // entropy
+		   *S_diff,
+		   *S_prev;  
 
 	double *FR,		           // density flux
 		   *FRU,	           // moment flux
 		   *FRE,	           // energy flux
-	double *UFLUX;	           // velocity flux
+	       *UFLUX;	           // velocity flux
 
 	double *uss, *pss, *dss;                                         // boundaries
 	double *exact_R, *exact_U, *exact_P, *exact_RE, *exact_S;		 // exact values
 	double *diff_R, *diff_U, *diff_P, *diff_RE, *diff_S;             // diff of analyt and numerical functions
 	double *diff;									    			 // for this array the memory is allocated inside function 
-	double *x_init, *x_layer, *x_layer_NC;                           // coordinates
+	double *x_init, *x_layer;                                        // coordinates
 
 	int numcells, start_print, jump_print, left_index, right_index, imesh;
 	int iter = 0, count = 0, last = 0;
@@ -73,7 +73,6 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	/* Domain */
 	len = LENGTH;
 	dx = len / double(numcells);	// step 
-	x_layer_NC = new double[numcells];
 
 	/* Create arrays */
 	R = (double*)_mm_malloc(numcells * sizeof(double), 32);
@@ -330,9 +329,9 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 		/* Checking of accuracy of the solution */
 #ifdef INTEGRAL
 #ifndef DIFF_ANALIT_RIEMANN
-		outline_integral_riemann(numcells, timer, tau, (double)T1, (double)T2, (double)X1, (double)X2, R, U, P, RE, S, sum_m); //numerical solution on timer with new P U R 
+		outline_integral_riemann(numcells, timer, tau, (double)T1, (double)T2, (double)X1, (double)X2, x_init, R, U, P, RE, S, sum_m); //numerical solution on timer with new P U R 
 #else
-		outline_integral_riemann(numcells, timer, tau, T1, T2, X1, X2, diff_R, diff_U, diff_P, diff_RE, diff_S, sum_m); //difference num and exact
+		outline_integral_riemann(numcells, timer, tau, (double)T1, (double)T2, (double)X1, (double)X2, x_init, diff_R, diff_U, diff_P, diff_RE, diff_S, sum_m); //difference num and exact
 #endif
 #endif
 		/* Output to file during computations */
@@ -360,8 +359,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 #endif
 
 	/* Analytical computations */
-#ifdef DIFF_ANALIT_RIEMANN
-#ifdef L1-NORM
+#if defined(DIFF_ANALIT_RIEMANN) && defined(L1_NORM)
 	difference_analitical_riemann_Linf(numb, R, U, P, exact_R, exact_U, exact_P, delta_ro, delta_u, delta_p);
 	delta_RUP[0][numb] = delta_ro;
 	delta_RUP[1][numb] = delta_u;
@@ -371,8 +369,6 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	l1_RUP[0][numb] = delta_ro;
 	l1_RUP[1][numb] = delta_u;
 	l1_PUP[2][numb] = delta_p;
-
-#endif
 #endif
 
 	/* Checking of accuracy of the solution */
