@@ -338,9 +338,9 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 		/* Output to file during computations */
 #if defined(OUTPUT_N_SMOOTH) && defined(PRINT)
 #if (PROBLEM == 18)
-		gnuplot_n_smooth_steps(numcells, timer, tau, x_layer, R, U, P, RE, S, S_diff, UFLUX);
+		file_n_smooth_steps(numcells, timer, tau, x_layer, R, U, P, RE, S, S_diff, UFLUX);
 #else
-		gnuplot_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, UFLUX);
+		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, UFLUX);
 #endif
 #endif
 		/* Euler coordinates */
@@ -411,12 +411,14 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 #endif
 
 	/* The final output */
-#if defined(PRINT) & !defined(OUTPUT_N_SMOOTH)
-#if (PROBLEM==2 || PROBLEM==9)
-	gnuplot_analitical_riemann2(numcells, w_num_r, w_num_u, w_num_p);
+#ifdef PRINT
+#ifdef OUTPUT_N_SMOOTH
+	gnuplot_n_smooth2(numcells, sw1_num, sw2_num, sw3_num);
 #else
 	gnuplot_last_step(numcells, dx, D_analit, R, U, P);
-	gnuplot_n_smooth2(numcells, sw1_num, sw2_num, sw3_num);
+#if (PROBLEM==2 || PROBLEM==9)
+	gnuplot_analitical_riemann2(numcells, w_num_r, w_num_u, w_num_p);
+#endif
 #endif
 #endif
 

@@ -9,7 +9,7 @@
 /************** MACRO ****************/
 
 //#define NC printf("Coordinates of shockwave is setted up\n");  // It influences on output in .dat file
-//#define NC2 prog // (x-x0-Dt)/h
+//#define NC2 // (x-x0-Dt)/h
 
 //#define FIRST printf("The first output: only first 100 dots\n"); // For 1 task: NC, SECOND 
 #define SECOND printf("The second output: printing all dots\n");
@@ -18,7 +18,7 @@
 //#define SW_FINITE_DIFF  printf("Its a work with shock wave and right parts. We are determinating the wavelength\n")
 //#define RW_NUM_ANALITICAL  printf("We are conculating the difference between numeric and analitical solvers\n")   // если установлен этот макрос, то print не нуженropy 
 //#define SIMPLE printf("The simple print")
-#define INTEGRAL printf("Integrals are computed")
+//#define INTEGRAL printf("Integrals are computed")
 //#define FIVE_T_STEPS
 #define OUTPUT_N_SMOOTH
 //#define DIFF_ANALIT_RIEMANN

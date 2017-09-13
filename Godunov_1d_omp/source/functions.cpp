@@ -834,6 +834,67 @@ double initial_velocity(double x)
 	return 0;
 }
 
+void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer,
+	double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *UFLUX)
+{
+	FILE* fout, *fout_NC;
+	char FileName[255], FileName2[255];
+	double dx = LENGTH / double(numcells);
+	double x, ps, us, ds, cs, es, es_d;
+	double D_analit = 1.371913;
+
+	int proverka[N_smooth] = { 0 };
+	double time_control[N_smooth];
+	double k_step = time_max_array[PROBLEM] / N_smooth;
+
+	for (int i = 0; i < N_smooth; i++)
+	{
+		time_control[i] = (i + 1)*k_step;
+	}
+
+	for (int k = 0; k < N_smooth; k++)
+	{
+
+		if (fabs(timer - time_control[k]) <= tau && proverka[k] == 0)
+		{
+#ifndef NC					
+			sprintf(FileName, "workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, time_control[k]);
+			fout = fopen(FileName, "w");
+			fprintf(fout, "Timer: %lf\n", timer);
+#else
+			sprintf(FileName2, "workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf_NC.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, time_control[k]);
+			fout_NC = fopen(FileName2, "w");
+			fprintf(fout_NC, "Timer: %lf\n", timer);
+#endif
+			for (int i = 0; i < numcells; i++)  // вывод всегда по 100 точек ( с первой итерации которые )
+			{
+
+				ds = R[i];
+				//us = U[i] - 0.4533;
+				us = U[i];
+				ps = P[i];
+				cs = sqrt(GAMMA*P[i] / R[i]);
+				es = S[i];
+				es_d = S_diff[i];
+
+#ifndef NC
+				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, es_d);
+#else
+				fprintf(fout_NC, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x, ds, us, ps, cs, es, es_d);
+#endif
+			}
+#ifndef NC
+			fclose(fout);
+#else
+			fclose(fout_NC);
+#endif
+			proverka[k] = 1;
+
+		}
+	}
+}
+
+
 void difference_SW(int numcells, double timer, double *R, double *U, double *P, 
 	                          double *shw_diff_d, double *shw_diff_u, double *shw_diff_p, 
 	                          double *shw_analit_d, double *shw_analit_u, double *shw_analit_p)
@@ -1460,9 +1521,7 @@ void difference_analitical_riemann_L1(int numb, double* R, double*U, double*P, d
 		difference_D[i] = fabs(R[i] - R_D[i]);
 		difference_U[i] = fabs(U[i] - R_U[i]);
 		difference_P[i] = fabs(P[i] - R_P[i]);
-		//if (numb == 0 || numb==1) printf("%lf\n", difference_D[i]);
 	}
-
 
 
 	for (int i = 0; i < new_numcells; i++)

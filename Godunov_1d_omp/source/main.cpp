@@ -29,13 +29,7 @@ int main()
 	start = clock();
 	for (i = 0; i < NUM_ITER; i++) // Iterations   //there is dependence between iterations!!! its impossible to start new iteration before last ends
 	{
-#ifdef OTKOL
-		if (run[i] == 1) iteration_bound(i);
-#else
 		if (run[i] == 1) iteration(i, F_ro, ITER_TIME);
-#endif
-
-		/******************Different settings and tasks***************************/
 
 #if (defined(PRINT) && defined(SIMPLE))
 		gnuplot_one_iteration(nmesh[i]);

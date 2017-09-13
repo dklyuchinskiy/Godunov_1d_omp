@@ -41,6 +41,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, const doub
 void file_exact_diff(int numcells, double *exact_R, double *exact_U, double *exact_P, double *exact_RE, double *exact_S, double *diff_R, double *diff_U, double *diff_P, double time);
 void inf_before_start(int numcells, double *R, double *U, double *P, double &D_analit);
 void first_step_validation(FILE *file, int numcells, int c_c, double timer, double *R, double *U, double *P, double *dss, double *uss, double *pss);
+void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *UFLUX);
 
 // Gnuplot
 
@@ -55,7 +56,6 @@ void gnuplot_five_t_steps(int numb);
 void gnuplot_n_smooth_NC(int numb);
 void gnuplot_n_smooth_NC2(int numcells, int *n_r, int *n_u, int *n_p);
 void gnuplot_analitical_riemann(int numcells, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P);
-void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *UFLUX);
 void gnuplot_n_smooth(int numb);
 void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth], int sw3[3][N_smooth]);
 void gnuplot_n_smooth3(int numcells);
