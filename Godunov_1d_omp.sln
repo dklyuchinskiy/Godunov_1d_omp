@@ -11,6 +11,8 @@ Global
 		Debug|x86 = Debug|x86
 		rel2|x64 = rel2|x64
 		rel2|x86 = rel2|x86
+		rel3|x64 = rel3|x64
+		rel3|x86 = rel3|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
@@ -23,6 +25,10 @@ Global
 		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.rel2|x64.Build.0 = rel2|x64
 		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.rel2|x86.ActiveCfg = rel2|Win32
 		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.rel2|x86.Build.0 = rel2|Win32
+		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.rel3|x64.ActiveCfg = rel3|x64
+		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.rel3|x64.Build.0 = rel3|x64
+		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.rel3|x86.ActiveCfg = rel3|Win32
+		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.rel3|x86.Build.0 = rel3|Win32
 		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.Release|x64.ActiveCfg = Release|x64
 		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.Release|x64.Build.0 = Release|x64
 		{3D05A673-42FD-4594-8359-98DCBFB18E1C}.Release|x86.ActiveCfg = Release|Win32

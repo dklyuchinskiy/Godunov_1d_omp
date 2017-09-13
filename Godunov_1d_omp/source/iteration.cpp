@@ -183,7 +183,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	FILE* array_flux[N_bound];
 	for (int i = 0; i < N_bound; i++)
 	{
-		sprintf(FileName4, "FLUXES_%c_%d_P%d_N%d.dat", TYPE, i, int(PROBLEM), int(numcells));
+		sprintf(FileName4, "FLUXES/FLUXES_%c_%d_P%d_N%d.dat", TYPE, i, int(PROBLEM), int(numcells));
 		array_flux[i] = fopen(FileName4, "w+");
 	}
 #endif

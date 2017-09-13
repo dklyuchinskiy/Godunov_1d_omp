@@ -594,7 +594,6 @@ void linear_check(double dl, double ul, double pl, double dr, double ur, double 
 		}
 	}
 
-
 }
 
 double gyugonio(double p1, double ro1, double p2/*за ударной волной*/)
