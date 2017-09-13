@@ -75,29 +75,38 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	dx = len / double(numcells);	// step 
 
 	/* Create arrays */
-	R = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	P = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	U = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	S = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	RU = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	RE = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	S_diff = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	S_prev = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	mem_alloc(numcells, &R, 32);
+	mem_alloc(numcells, &P, 32);
+	mem_alloc(numcells, &U, 32);
+	mem_alloc(numcells, &S, 32);
+	mem_alloc(numcells, &RU, 32);
+	mem_alloc(numcells, &RE, 32);
+	mem_alloc(numcells, &S_diff, 32);
+	mem_alloc(numcells, &S_prev, 32);
+	mem_alloc(numcells, &S_diff, 32);
 
-	x_layer = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	x_init = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	mem_alloc(numcells, &x_layer, 32);
+	mem_alloc(numcells, &x_init, 32);
 
-	exact_R = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	exact_P = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	exact_U = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	exact_S = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	exact_RE = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	mem_alloc(numcells, &exact_R, 32);
+	mem_alloc(numcells, &exact_U, 32);
+	mem_alloc(numcells, &exact_P, 32);
+	mem_alloc(numcells, &exact_S, 32);
+	mem_alloc(numcells, &exact_RE, 32);
 
-	diff_R = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	diff_P = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	diff_U = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	diff_S = (double*)_mm_malloc(numcells * sizeof(double), 32);
-	diff_RE = (double*)_mm_malloc(numcells * sizeof(double), 32);
+	mem_alloc(numcells, &diff_R, 32);
+	mem_alloc(numcells, &diff_U, 32);
+	mem_alloc(numcells, &diff_P, 32);
+	mem_alloc(numcells, &diff_S, 32);
+	mem_alloc(numcells, &diff_RE, 32);
+
+	mem_alloc(numcells + 1, &FR, 32);
+	mem_alloc(numcells + 1, &FRU, 32);
+	mem_alloc(numcells + 1, &FRE, 32);
+	mem_alloc(numcells + 1, &UFLUX, 32);
+	mem_alloc(numcells + 1, &dss, 32);
+	mem_alloc(numcells + 1, &uss, 32);
+	mem_alloc(numcells + 1, &pss, 32);
 
 	int w_num_p[N_smooth] = { 0 };
 	int w_num_r[N_smooth] = { 0 };
@@ -106,14 +115,6 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	int sw1_num[3][N_smooth] = { 0 };
 	int sw2_num[3][N_smooth] = { 0 };
 	int sw3_num[3][N_smooth] = { 0 };
-	
-	FR = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
-	FRU = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
-	FRE = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
-	UFLUX = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
-	dss = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
-	uss = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
-	pss = (double*)_mm_malloc((numcells + 1) * sizeof(double), 32);
 
 	double t_flux[N_bound] = { 0 };
 
@@ -419,36 +420,36 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 #endif
 #endif
 
-	_mm_free(R);
-	_mm_free(P);
-	_mm_free(U);
-	_mm_free(S_diff);
-	_mm_free(S);
-	_mm_free(RU);
-	_mm_free(RE);
+	mem_free(&R);
+	mem_free(&P);
+	mem_free(&U);
+	mem_free(&S_diff);
+	mem_free(&S);
+	mem_free(&RU);
+	mem_free(&RE);
 
-	_mm_free(FR);
-	_mm_free(FRU);
-	_mm_free(FRE);
-	_mm_free(UFLUX);
-	_mm_free(dss);
-	_mm_free(uss);
-	_mm_free(pss);
+	mem_free(&FR);
+	mem_free(&FRU);
+	mem_free(&FRE);
+	mem_free(&UFLUX);
+	mem_free(&dss);
+	mem_free(&uss);
+	mem_free(&pss);
 
-	_mm_free(exact_U);
-	_mm_free(exact_R);
-	_mm_free(exact_P);
-	_mm_free(exact_RE);
-	_mm_free(exact_S);
+	mem_free(&exact_U);
+	mem_free(&exact_R);
+	mem_free(&exact_P);
+	mem_free(&exact_RE);
+	mem_free(&exact_S);
 
-	_mm_free(diff_U);
-	_mm_free(diff_R);
-	_mm_free(diff_P);
-	_mm_free(diff_RE);
-	_mm_free(diff_S);
+	mem_free(&diff_U);
+	mem_free(&diff_R);
+	mem_free(&diff_P);
+	mem_free(&diff_RE);
+	mem_free(&diff_S);
 
-	_mm_free(x_layer);
-	_mm_free(x_init);
+	mem_free(&x_layer);
+	mem_free(&x_init);
 
 #ifdef DEBUG
 	fclose(file);

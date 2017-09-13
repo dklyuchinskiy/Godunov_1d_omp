@@ -7,17 +7,19 @@ double guessp(double dl, double ul, double pl, double cl, double dr, double ur, 
 void starpu(double &p, double &u, double dl, double ul, double pl, double cl, double dr, double ur, double pr, double cr);
 
 void iteration(int numb);
-void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss);
-void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last);
+void nonlinear_solver(int numcells, double *R, double *U, double *P, double *dss, double *uss, double *pss);
+void linear_solver(int numcells, double *R, double *U, double *P, double *dss, double *uss, double *pss, int last);
 void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double tau, double *t, double *UFLUX);
 void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P);
+void mem_alloc(int numcells, double **arr, int align);
+void mem_free(double **arr);
 
 double initial_density(double x);
 double initial_pressure(double x);
 double initial_velocity(double x);
 
-double gyugonio(double p1, double ro1, double p2/*за ударной волной*/);
-double sw_speed2(double ro1, double u1, double p1, double ro2 /*за ударной волной*/, double p2 /*за ударной волной*/);
+double gyugonio(double p1, double ro1, double p2);
+double sw_speed2(double ro1, double u1, double p1, double ro2, double p2);
 double sw_speed(double ro1, double ro2, double u1, double u2);
 double* finite_difference(int numb, double *mas);
 double RW_prop(int digit, double x, double numb, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r);
@@ -28,9 +30,9 @@ void linear_check(double dl, double ul, double pl, double dr, double ur, double 
 void runge(double *massiv, int ldf, int numb);
 void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P);
 void analitical_RW(FILE* file_name, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r, double numb);
-void analitical_SW(int numcells, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r, double *res_p, double *res_u, double* res_d, double timer);
+void analitical_SW(int numcells, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r, double *res_p, double *res_u, double *res_d, double timer);
 void analitical_riemann(int numcells, double p1, double ro1, double u1, double p2, double ro2, double u2, double *sol_p, double *sol_u);
-void analitical_riemann_modeling(int numcells, double ro1, double u1, double p1, double ro2, double u2, double p2, double timer, /*output*/double *all_d, double *all_u, double *all_p);
+void analitical_riemann_modeling(int numcells, double ro1, double u1, double p1, double ro2, double u2, double p2, double timer, double *all_d, double *all_u, double *all_p);
 void analitical_writing_into_file(int numcells, double *R_D, double *R_U, double *R_P, double timer);
 void difference_analitical_riemann_Linf(int numb, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P, double &delta_ro, double &delta_u, double &delta_p);
 void difference_analitical_riemann_L1(int numb, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P, double &sum_ro, double &sum_u, double &sum_p);
@@ -51,12 +53,12 @@ void gnuplot_one_it_NC();
 void gnuplot_conservative(int numb);
 void gnuplot_five_t_steps(int numb);
 void gnuplot_n_smooth_NC(int numb);
-void gnuplot_n_smooth_NC2(int numcells, int* n_r, int* n_u, int* n_p);
-void gnuplot_analitical_riemann(int numcells, double* R, double*U, double*P, double* R_D, double*R_U, double*R_P);
+void gnuplot_n_smooth_NC2(int numcells, int *n_r, int *n_u, int *n_p);
+void gnuplot_analitical_riemann(int numcells, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P);
 void gnuplot_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *UFLUX);
 void gnuplot_n_smooth(int numb);
 void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth], int sw3[3][N_smooth]);
 void gnuplot_n_smooth3(int numcells);
-void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p);
+void gnuplot_analitical_riemann2(int numcells, int *n_r, int *n_u, int *n_p);
 void gnuplot_last_step(int numcells, double dx, double D_analit, double *R, double *U, double *P);
 

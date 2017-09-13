@@ -519,6 +519,16 @@ void linear(double dl, double ul, double pl, double dr, double ur, double pr, do
 
 }
 
+void mem_alloc(int numcells, double* *arr, int align)
+{
+	*arr = (double*)_mm_malloc(numcells * sizeof(double), align);
+}
+
+void mem_free(double **arr)
+{
+	_mm_free(*arr);
+}
+
 void first_step_validation(FILE *file3, int numcells, int c_c, double timer, double *R, double *U, double *P, double *dss, double *uss, double *pss)
 {
 	double len = LENGTH;
