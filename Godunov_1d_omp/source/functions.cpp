@@ -1,6 +1,230 @@
 #include "definitions.h"
 #include "support.h"
 
+
+void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last)
+{
+	// Параметры слева
+	double	dl,  // плотность
+		ul,  // скорость
+		pl,  // давление
+		cl;  // скорость звука
+
+			 // Параметры справа
+	double	dr,  // плотность
+		ur,  // скорость
+		pr,  // давление
+		cr;  // скорость звука
+
+	double wtime = 0;
+	double bigU, bigP, bigS, bigR, help, hm, R3, R4;
+	double *C = new double[numcells];
+	double *RC = new double[numcells];
+	double *HM = new double[numcells + 1];
+	double *H = new double[numcells];
+
+
+#pragma omp parallel private(wtime) num_threads(OMP_CORES)
+	{
+		wtime = omp_get_wtime();
+		//#pragma omp for simd schedule(dynamic,64) private(ul,pl,dl,ur,pr,dr,cl,cr,hl,hr,bigU,bigP,bigR)
+//#pragma omp for simd schedule(simd:static) //schedule(dynamic,64)
+		for (int i = 1; i < numcells; i++)
+		{
+			/*	ul = U[i - 1];
+			pl = P[i - 1];
+			dl = R[i - 1];
+
+			ur = U[i];
+			pr = P[i];
+			dr = R[i];*/
+
+			C[i - 1] = sqrt(GAMMA*P[i - 1] / R[i - 1]);
+			C[i] = sqrt(GAMMA*P[i] / R[i]);
+
+			RC[i - 1] = R[i - 1] * C[i - 1];
+			RC[i] = R[i] * C[i];
+
+			H[i - 1] = 1.0 / (RC[i - 1]);
+			H[i] = 1.0 / (RC[i]);
+
+			//	HM[i] = 1.0 / (H[i - 1] + H[i]);
+
+			if (U[i - 1] > C[i - 1])
+			{
+				pss[i] = P[i - 1];
+				uss[i] = U[i - 1];
+				dss[i] = R[i - 1];
+
+			}
+			else if (U[i] < -C[i])
+			{
+				pss[i] = P[i];
+				uss[i] = U[i];
+				dss[i] = R[i];
+			}
+			else
+			{
+				pss[i] = (U[i - 1] - U[i] + P[i - 1] * H[i - 1] + P[i] * H[i]) / (H[i - 1] + H[i]);
+				uss[i] = (RC[i - 1] * U[i - 1] + RC[i] * U[i] + P[i - 1] - P[i]) / (RC[i - 1] + RC[i]);
+
+				if (uss[i] > 0) dss[i] = R[i - 1] - R[i - 1] / C[i - 1] * (uss[i] - U[i - 1]);
+				else dss[i] = R[i] + R[i] / C[i] * (uss[i] - U[i]);
+
+			}
+			/*
+			uss[i] = bigU;
+			pss[i] = bigP;
+			dss[i] = bigR;
+			*/
+		}
+		wtime = omp_get_wtime() - wtime;
+		LOOP_TIME[2][omp_get_thread_num()] += wtime;
+		if (last) printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[2][omp_get_thread_num()]);
+	}
+}
+
+void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss)
+{
+
+	double um = 0, pm = 0;
+	double s_char;
+
+	/***** Параметры ударной трубы для соседних ячеек *****/
+	// Параметры слева
+	double	dl,  // плотность
+		ul,  // скорость
+		pl,  // давление
+		cl;  // скорость звука
+
+			 // Параметры справа
+	double	dr,  // плотность
+		ur,  // скорость
+		pr,  // давление
+		cr;  // скорость звука
+
+	//====================================== EXACT RIEMANN PROBLEM =========================
+	for (int i = 1; i < numcells; i++)
+	{
+		// левая сторона
+		dl = R[i - 1];
+		pl = P[i - 1];
+		ul = U[i - 1];
+		cl = sqrt(GAMMA*pl / dl);
+		// правая сторона
+		dr = R[i];
+		pr = P[i];
+		ur = U[i];
+		cr = sqrt(GAMMA*pr / dr);
+
+		starpu(pm, um, dl, ul, pl, cl, dr, ur, pr, cr);
+
+		// Решение задачи распада разрыва
+		sample(pm, um, s_char, dl, ul, pl, cl, dr, ur, pr, cr, dss[i], uss[i], pss[i]);
+	}
+}
+
+void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P)
+{
+	double c0, s0, cn, sn;
+
+#if (PROBLEM==18 || PROBLEM==20)
+	// set pressure
+	pss[0] = initial_pressure(0.0);
+	//	pss[numcells] = initial_pressure(LENGTH);
+
+	c0 = sqrt(GAMMA*P[0] / R[0]);
+	//	cn = sqrt(GAMMA*P[numcells] / R[numcells]);
+
+	double l0_const = U[0] - P[0] / (R[0] * c0);
+	//double rn_const = U[numcells] + P[numcells] / (R[numcells] * cn);
+
+	uss[0] = l0_const + pss[0] / (R[0] * c0);
+	//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * cn);
+
+	s0 = log(P[0] / pow(R[0], GAMMA));
+	//	sn = log(P[numcells] / pow(R[numcells], GAMMA));
+
+	//dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+	//	dss[numcells] = pow(pss[numcells] / sn, 1.0 / GAMMA);
+
+	//R3 = dl - dl / cl * (bigU - ul);
+	dss[0] = R[0] + R[0] / c0 * (uss[0] - U[0]);
+
+	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
+
+#elif (PROBLEM == 19)
+
+	uss[0] = timer;
+	c0 = sqrt(GAMMA*P[0] / R[0]);
+
+	double l0_const = U[0] - P[0] / (R[0] * c0);
+	double rn_const = U[numcells] + P[numcells] / (R[numcells] * Cn);
+
+	pss[0] = (uss[0] - l0_const)*(R[0] * c0);
+
+	s0 = log(P[0] / pow(R[0], GAMMA));
+	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+
+#elif (PROBLEM == 4)
+	// set pressure
+	pss[0] = 4.0 / exp(3.0*timer / time_max);
+	//	pss[numcells] = initial_pressure(LENGTH);
+
+	c0 = sqrt(GAMMA*P[0] / R[0]);
+	//	cn = sqrt(GAMMA*P[numcells] / R[numcells]);
+
+	double l0_const = U[0] - P[0] / (R[0] * c0);
+	double rn_const = U[numcells] + P[numcells] / (R[numcells] * cn);
+
+	uss[0] = l0_const + pss[0] / (R[0] * c0);
+	//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * cn);
+
+	s0 = log(P[0] / pow(R[0], GAMMA));
+	//	sn = log(P[numcells] / pow(R[numcells], GAMMA));
+
+	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+	//	dss[numcells] = pow(pss[numcells] / S[numcells], 1.0 / GAMMA);
+
+#elif (PROBLEM == 3)
+	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
+	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[0], U[0], P[0], dss[numcells], uss[numcells], pss[numcells]);
+#else
+	linear(R[0], U[0], P[0], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
+	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
+#endif
+}
+
+void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double tau, double *t, double *UFLUX)
+{
+	int t_ind[N_bound] = { 0 };
+	int numcells_flux;
+	numcells_flux = numcells;
+
+	double dx = LENGTH / double(numcells);
+
+	for (int i = 0; i < N_bound; i++)
+	{
+		t_ind[i] = i * numcells_flux / N_bound;
+	}
+
+	if (iter == 1)
+	{
+		for (int i = 0; i < N_bound; i++)
+			t[i] = (t_ind[i] + 0.5)*dx;
+	}
+	else
+	{
+		for (int i = 0; i < N_bound; i++)
+		{
+			//t[i] = t[i] + UFLUX[t_ind[i]] * tau;
+
+			fprintf(array_flux[i], "%lf %lf %lf\n", t[i], timer, UFLUX[t_ind[i]]);
+		}
+	}
+		//t[i] = (t_ind[i] + 0.5)*dx - UFLUX[t_ind[i]] * timer;
+}
+
 /**************************************************
 Получение плотности, давления и скорости в точке
 **************************************************/
@@ -260,220 +484,6 @@ void starpu(double &p, double &u, double dl, double ul, double pl, double cl, do
 	u = 0.5 * (ul + ur + fr - fl);
 }
 
-void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss)
-{
-
-	double um = 0, pm = 0;
-	double s_char;
-
-	/***** Параметры ударной трубы для соседних ячеек *****/
-	// Параметры слева
-	double	dl,  // плотность
-		ul,  // скорость
-		pl,  // давление
-		cl;  // скорость звука
-
-			 // Параметры справа
-	double	dr,  // плотность
-		ur,  // скорость
-		pr,  // давление
-		cr;  // скорость звука
-
-	//====================================== EXACT RIEMANN PROBLEM =========================
-	for (int i = 1; i < numcells; i++)
-	{
-		// левая сторона
-		dl = R[i - 1];
-		pl = P[i - 1];
-		ul = U[i - 1];
-		cl = sqrt(GAMMA*pl / dl);
-		// правая сторона
-		dr = R[i];
-		pr = P[i];
-		ur = U[i];
-		cr = sqrt(GAMMA*pr / dr);
-
-		starpu(pm, um, dl, ul, pl, cl, dr, ur, pr, cr);
-
-		// Решение задачи распада разрыва
-		sample(pm, um, s_char, dl, ul, pl, cl, dr, ur, pr, cr, dss[i], uss[i], pss[i]);
-	}
-}
-
-void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P)
-{
-	double c0, s0, cn, sn;
-
-#if (PROBLEM==18 || PROBLEM==20)
-	// set pressure
-	pss[0] = initial_pressure(0.0);
-	//	pss[numcells] = initial_pressure(LENGTH);
-
-	c0 = sqrt(GAMMA*P[0] / R[0]);
-	//	cn = sqrt(GAMMA*P[numcells] / R[numcells]);
-
-	double l0_const = U[0] - P[0] / (R[0] * c0);
-	//double rn_const = U[numcells] + P[numcells] / (R[numcells] * cn);
-
-	uss[0] = l0_const + pss[0] / (R[0] * c0);
-	//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * cn);
-
-	s0 = log(P[0] / pow(R[0], GAMMA));
-	//	sn = log(P[numcells] / pow(R[numcells], GAMMA));
-
-	//dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
-	//	dss[numcells] = pow(pss[numcells] / sn, 1.0 / GAMMA);
-
-	//R3 = dl - dl / cl * (bigU - ul);
-	dss[0] = R[0] + R[0] / c0 * (uss[0] - U[0]);
-
-	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
-
-#elif (PROBLEM == 19)
-
-	uss[0] = timer;
-	c0 = sqrt(GAMMA*P[0] / R[0]);
-
-	double l0_const = U[0] - P[0] / (R[0] * c0);
-	double rn_const = U[numcells] + P[numcells] / (R[numcells] * Cn);
-
-	pss[0] = (uss[0] - l0_const)*(R[0] * c0);
-
-	s0 = log(P[0] / pow(R[0], GAMMA));
-	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
-
-#elif (PROBLEM == 4)
-	// set pressure
-	pss[0] = 4.0 / exp(3.0*timer / time_max);
-	//	pss[numcells] = initial_pressure(LENGTH);
-
-	c0 = sqrt(GAMMA*P[0] / R[0]);
-	//	cn = sqrt(GAMMA*P[numcells] / R[numcells]);
-
-	double l0_const = U[0] - P[0] / (R[0] * c0);
-	double rn_const = U[numcells] + P[numcells] / (R[numcells] * cn);
-
-	uss[0] = l0_const + pss[0] / (R[0] * c0);
-	//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * cn);
-
-	s0 = log(P[0] / pow(R[0], GAMMA));
-	//	sn = log(P[numcells] / pow(R[numcells], GAMMA));
-
-	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
-	//	dss[numcells] = pow(pss[numcells] / S[numcells], 1.0 / GAMMA);
-
-#elif (PROBLEM == 3)
-	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
-	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[0], U[0], P[0], dss[numcells], uss[numcells], pss[numcells]);
-#else
-	linear(R[0], U[0], P[0], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
-	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
-#endif
-}
-
-void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double tau, double *t, double *UFLUX)
-{
-	int t_ind[N_bound] = { 0 };
-	int numcells_flux;
-	numcells_flux = numcells;
-
-	double dx = LENGTH / double(numcells);
-
-	for (int i = 0; i < N_bound; i++)
-	{
-		t_ind[i] = i * numcells_flux / N_bound;
-	}
-
-	if (iter == 1)
-	{
-		for (int i = 0; i < N_bound; i++)
-			t[i] = (t_ind[i] + 0.5)*dx;
-	}
-	else
-	{
-		for (int i = 0; i < N_bound; i++)
-		{
-			//t[i] = t[i] + UFLUX[t_ind[i]] * tau;
-
-			fprintf(array_flux[i], "%lf %lf %lf\n", t[i], timer, UFLUX[t_ind[i]]);
-		}
-	}
-		//t[i] = (t_ind[i] + 0.5)*dx - UFLUX[t_ind[i]] * timer;
-}
-
-void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last)
-{
-	// Параметры слева
-	double	dl,  // плотность
-		ul,  // скорость
-		pl,  // давление
-		cl;  // скорость звука
-
-			 // Параметры справа
-	double	dr,  // плотность
-		ur,  // скорость
-		pr,  // давление
-		cr;  // скорость звука
-
-	double wtime = 0;
-	double bigU, bigP, bigS, bigR, help, hl, hr, R3, R4;
-
-
-#pragma omp parallel private(ul,pl,dl,ur,pr,dr,cl,cr,hl,hr,bigU,bigP,bigR,wtime) num_threads(OMP_CORES)
-	{
-		wtime = omp_get_wtime();
-#pragma omp for schedule(dynamic,64) 
-		for (int i = 1; i < numcells; i++)
-		{
-			ul = U[i - 1];
-			pl = P[i - 1];
-			dl = R[i - 1];
-
-			ur = U[i];
-			pr = P[i];
-			dr = R[i];
-
-			cl = sqrt(GAMMA*pl / dl);
-			cr = sqrt(GAMMA*pr / dr);
-			hl = 1.0 / (dl*cl);
-			hr = 1.0 / (dr*cr);
-
-			if (ul > cl)
-			{
-				bigP = pl;
-				bigU = ul;
-				bigR = dl;
-
-			}
-			else if (ur < -cr)
-			{
-				bigP = pr;
-				bigU = ur;
-				bigR = dr;
-			}
-			else
-			{
-				bigP = (ul - ur + pl / (dl*cl) + pr / (dr*cr)) / (hl + hr);
-				bigU = (dl*cl*ul + dr*cr*ur + pl - pr) / (dl*cl + dr*cr);
-
-				R3 = dl - dl / cl * (bigU - ul);
-				R4 = dr + dr / cr * (bigU - ur);
-				if (bigU > 0) bigR = R3;
-				else bigR = R4;
-				
-			}
-
-			uss[i] = bigU;
-			pss[i] = bigP;
-			dss[i] = bigR;
-
-		}
-		wtime = omp_get_wtime() - wtime;
-		LOOP_TIME[2][omp_get_thread_num()] += wtime;
-		if (last) printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[2][omp_get_thread_num()]);
-	}
-}
-
 /* Linear solver */
 void linear(double dl, double ul, double pl, double dr, double ur, double pr, double &d, double &u, double &p) // передача параметров по ссылке
 {
@@ -625,18 +635,14 @@ double initial_density(double x)
 	{
 	case 19:
 	case 18:
-	case 0:	if (x <= DISC_POINT)         
-		return 1.271413930046081;
-			else
-				return 1.0;
-		/*case 1:	if (x <= DISC_POINT)
-		return 1.551608179649565;
-		else
-		return 2.0;*/
-	case 1:	if (x <= DISC_POINT)
+	case 0:	if (x <= DISC_POINT) return 1.271413930046081;
+			else return 1.0;
+	case 1:	if (x <= DISC_POINT) return 1.551608179649565;
+			else return 2.0;
+	/*case 1:	if (x <= DISC_POINT)
 		return 1.0;
 			else
-				return 0.585507;
+				return 0.585507;*/
 	case 2:	if (x <= 0.5)
 		return 2.0;
 			else
@@ -695,18 +701,14 @@ double initial_pressure(double x)
 	{
 	case 19:
 	case 18:
-	case 0:	if (x <= DISC_POINT)
-		return 1.401789770179879;
-			else
-				return 1.0;
-		/*case 1:	if (x <= DISC_POINT)
-		return 1.401789770179879;
-		else
-		return 2.0;*/
-	case 1:	if (x <= DISC_POINT)
+	case 0:	if (x <= DISC_POINT) return 1.401789770179879;
+			else return 1.0;
+	case 1:	if (x <= DISC_POINT) return 1.401789770179879;
+			else return 2.0;
+	/*case 1:	if (x <= DISC_POINT)
 		return 1.0;
 			else
-				return 0.466727;
+				return 0.466727;*/
 
 	case 2:	if (x <= 0.5)
 		return 2.0;
@@ -768,19 +770,16 @@ double initial_velocity(double x)
 	{
 	case 19:
 	case 18:
-	case 0:	if (x <= DISC_POINT)
-		return 0.292868067614595;
-			else
-				return 0.0;
-		/*case 1:	if (x <= DISC_POINT)
-		return -0.292868067614595;
-		else
-		return 0.0;*/
+	case 0:	if (x <= DISC_POINT) return 0.292868067614595;
+			else return 0.0;
 
-	case 1:	if (x <= DISC_POINT)
+	case 1:	if (x <= DISC_POINT) return -0.292868067614595;
+			else  return 0.0;
+
+	/*case 1:	if (x <= DISC_POINT)
 		return 0.75 + 0.4533;// -0.43;
 			else
-				return 1.386 + 0.4533;// -0.43;
+				return 1.386 + 0.4533;// -0.43;*/
 
 	case 2:	return 0.0;
 		//if (x <= 0.5)  2 ударных волны
@@ -1646,7 +1645,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 	if (timer >= tt1 && check1 == 0)
 	{
 
-#pragma omp parallel for simd reduction(+:sum_b_M,sum_b_I,sum_b_S,sum_b_E) schedule(guided) num_threads(OMP_CORES)
+#pragma omp parallel for reduction(+:sum_b_M,sum_b_I,sum_b_S,sum_b_E) schedule(guided) num_threads(OMP_CORES)
 		for (int i = 0; i < numcells; i++)
 		{
 			if (xx[i] >= xx1 && xx[i] <= xx2)
@@ -1664,7 +1663,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 
 	if (timer >= tt2 && check2 == 0)
 	{
-#pragma omp parallel for simd reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided) num_threads(OMP_CORES)
+#pragma omp parallel for reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided) num_threads(OMP_CORES)
 		for (int i = 0; i < numcells; i++)
 		{
 			if (xx[i] >= xx1 && xx[i] <= xx2)

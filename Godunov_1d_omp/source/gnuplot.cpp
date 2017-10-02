@@ -865,10 +865,12 @@ void gnuplot_last_step(int numcells, double dx, double D_analit, double *R, doub
 #endif
 	{
 		x = i*dx + 0.5*dx;
+#ifdef NC
 #if (PROBLEM==0)
 		x_NC = (i*dx + 0.5*dx) - D_analit*time_max_array[0];  //NC
 #elif (PROBLEM==1)
 		x_NC = (i*dx + 0.5*dx - 0.1) / (time_max_array[0] * (numb + 1));  //NC
+#endif
 #endif
 
 		/********************************************************************************************************************************

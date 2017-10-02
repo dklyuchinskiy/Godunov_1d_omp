@@ -34,7 +34,7 @@
 //#define DEBUG
 
 #if (PROBLEM < 3 || PROBLEM == 7)
-#define FLUX_COUNT
+//#define FLUX_COUNT
 #endif
 
 #ifdef INTEGRAL
@@ -55,7 +55,7 @@
 #define EPS		1.0e-6	// точность решения нелинейного уравнения
 #define MAX_ITER	20	// количество итераций для решения нелинейного уравнения
 
-#define PROBLEM		0
+#define PROBLEM		1
 /*
 0 - shock wave
 1 - rarify wave

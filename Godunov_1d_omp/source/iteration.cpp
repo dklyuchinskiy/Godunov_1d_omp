@@ -3,45 +3,43 @@
 
 void iteration(int numb, double F_ro[], double ITER_TIME[])
 {
-	double *R,				   // density
-		   *P,				   // pressure
-	       *U,  			   // velocity
-     	   *RU,				   // moment of impulse
-    	   *RE,			       // total energy
-	       *S,				   // entropy
-		   *S_diff,
-		   *S_prev;  
+	double *R,				// density
+		*P,					// pressure
+		*U,					// velocity
+		*RU,				// moment of impulse
+		*RE,				// total energy
+		*S,					// entropy
+		*S_diff,
+		*S_prev;  
 
-	double *FR,		           // density flux
-		   *FRU,	           // moment flux
-		   *FRE,	           // energy flux
-	       *UFLUX;	           // velocity flux
+	double *FR,				// density flux
+		*FRU,				// moment flux
+		*FRE,				// energy flux
+		*UFLUX;				// velocity flux
 
-	double *uss, *pss, *dss;                                         // boundaries
-	double *exact_R, *exact_U, *exact_P, *exact_RE, *exact_S;		 // exact values
-	double *diff_R, *diff_U, *diff_P, *diff_RE, *diff_S;             // diff of analyt and numerical functions
-	double *diff;									    			 // for this array the memory is allocated inside function 
-	double *x_init, *x_layer;                                        // coordinates
+	double *uss, *pss, *dss;										// boundaries
+	double *exact_R, *exact_U, *exact_P, *exact_RE, *exact_S;		// exact values
+	double *diff_R, *diff_U, *diff_P, *diff_RE, *diff_S;			// diff of analyt and numerical functions
+	double *diff;													// for this array the memory is allocated inside function 
+	double *x_init, *x_layer;										// coordinates
 
-	int numcells, start_print, jump_print, left_index, right_index, imesh;
+	int numcells, start_print, jump_print, left_index, right_index;
 	int iter = 0, count = 0, last = 0;
-	int check1 = 0, check2 = 0, check3 = 0, check5[5] = { 0 };
 
 	double timer, time_max, tau, dx, dtdx, len, x, x_NC, wtime, CFL;
 	double ds = 0, us = 0, ps = 0, es = 0, es_diff = 0, cs = 0;
 	double u1 = 0, u2 = 0, u3 = 0, u_loc = 0, u_max = 0;
-	double l1, r1, l2, r2;	
 	double D_analit = 0;
 	double delta_ro, delta_u, delta_p;
 	double cfl_time = 0;
 
-	char FileName[255], FileName2[255], FileName3[255], FileName4[255];
+	char FileName[255], FileName2[255];
 	double sum_m[4][4] = { 0 };
 	
 	double loop_full[LOOPS] = { 0 };
 	double LOOP_TIME[LOOPS][OMP_CORES] = { 0 };
 
-	FILE *fout, *fout_NC, *fmesh, *file;
+	FILE *file;
 
 	/* Set number of cells */
 	numcells = nmesh[numb];	//	N = 100 * 3^K = 100 * 3^(NUM_MESH)
@@ -121,8 +119,8 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	/*********************************************************************/
 
 #ifdef DEBUG
-	sprintf(FileName2, "first step analysis_%c.dat", TYPE);
-	file = fopen(FileName2, "w");
+	sprintf(FileName, "first step analysis_%c.dat", TYPE);
+	file = fopen(FileName, "w");
 #endif
 	
 	printf("\nIteration %d\n", numb + 1);
@@ -183,8 +181,8 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	FILE* array_flux[N_bound];
 	for (int i = 0; i < N_bound; i++)
 	{
-		sprintf(FileName4, "FLUXES/FLUXES_%c_%d_P%d_N%d.dat", TYPE, i, int(PROBLEM), int(numcells));
-		array_flux[i] = fopen(FileName4, "w+");
+		sprintf(FileName2, "FLUXES/FLUXES_%c_%d_P%d_N%d.dat", TYPE, i, int(PROBLEM), int(numcells));
+		array_flux[i] = fopen(FileName2, "w+");
 	}
 #endif
 
@@ -244,7 +242,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 		{
 			if (last) printf("Loop 2\n");
 			loop_time = clock();
-
+		
 			linear_solver(numcells, R, U, P, dss, uss, pss, last);
 
 			loop_full[2] += (double)(clock() - loop_time) / CLOCKS_PER_SEC;
