@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -55,7 +57,7 @@
 #define EPS		1.0e-6	// точность решения нелинейного уравнения
 #define MAX_ITER	20	// количество итераций для решения нелинейного уравнения
 
-#define PROBLEM		1
+#define PROBLEM		7
 /*
 0 - shock wave
 1 - rarify wave

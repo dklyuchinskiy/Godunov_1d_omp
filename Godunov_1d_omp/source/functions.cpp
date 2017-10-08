@@ -1,43 +1,21 @@
 #include "definitions.h"
 #include "support.h"
 
-
+/* SIMD linear solver */
 void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last)
 {
-	// Параметры слева
-	double	dl,  // плотность
-		ul,  // скорость
-		pl,  // давление
-		cl;  // скорость звука
-
-			 // Параметры справа
-	double	dr,  // плотность
-		ur,  // скорость
-		pr,  // давление
-		cr;  // скорость звука
-
 	double wtime = 0;
-	double bigU, bigP, bigS, bigR, help, hm, R3, R4;
 	double *C = new double[numcells];
 	double *RC = new double[numcells];
-	double *HM = new double[numcells + 1];
 	double *H = new double[numcells];
-
 
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 	{
 		wtime = omp_get_wtime();
-		//#pragma omp for simd schedule(dynamic,64) private(ul,pl,dl,ur,pr,dr,cl,cr,hl,hr,bigU,bigP,bigR)
-//#pragma omp for simd schedule(simd:static) //schedule(dynamic,64)
+
+#pragma omp for simd schedule(dynamic,64) // schedule(simd:static) 
 		for (int i = 1; i < numcells; i++)
 		{
-			/*	ul = U[i - 1];
-			pl = P[i - 1];
-			dl = R[i - 1];
-
-			ur = U[i];
-			pr = P[i];
-			dr = R[i];*/
 
 			C[i - 1] = sqrt(GAMMA*P[i - 1] / R[i - 1]);
 			C[i] = sqrt(GAMMA*P[i] / R[i]);
@@ -47,8 +25,6 @@ void linear_solver(int numcells, double* R, double* U, double* P, double* dss, d
 
 			H[i - 1] = 1.0 / (RC[i - 1]);
 			H[i] = 1.0 / (RC[i]);
-
-			//	HM[i] = 1.0 / (H[i - 1] + H[i]);
 
 			if (U[i - 1] > C[i - 1])
 			{
@@ -72,17 +48,57 @@ void linear_solver(int numcells, double* R, double* U, double* P, double* dss, d
 				else dss[i] = R[i] + R[i] / C[i] * (uss[i] - U[i]);
 
 			}
-			/*
-			uss[i] = bigU;
-			pss[i] = bigP;
-			dss[i] = bigR;
-			*/
+
 		}
 		wtime = omp_get_wtime() - wtime;
 		LOOP_TIME[2][omp_get_thread_num()] += wtime;
 		if (last) printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[2][omp_get_thread_num()]);
 	}
 }
+
+/* Scalar linear solver */
+void linear(double dl, double ul, double pl, double dr, double ur, double pr, double &d, double &u, double &p) // передача параметров по ссылке
+{
+	double bigU, bigP, bigS, bigR, cl, cr, help, hl, hr, R3, R4;
+
+	cl = sqrt(GAMMA*pl / dl);
+	cr = sqrt(GAMMA*pr / dr);
+	hl = 1.0 / (dl*cl);
+	hr = 1.0 / (dr*cr);
+
+	if (ul > cl)
+	{
+		bigP = pl;
+		bigU = ul;
+		bigR = dl;
+
+	}
+	else if (ur < -cr)
+	{
+		bigP = pr;
+		bigU = ur;
+		bigR = dr;
+	}
+	else
+	{
+		bigP = (ul - ur + pl / (dl*cl) + pr / (dr*cr)) / (hl + hr);
+		bigU = (dl*cl*ul + dr*cr*ur + pl - pr) / (dl*cl + dr*cr);
+		/*	if (bigU >= 0) bigS = pl / pow(dl, GAMMA);
+		else bigS = pr / pow(dr, GAMMA);
+		help = bigP / bigS;
+		bigR = pow(help, 1.0 / GAMMA);*/
+		R3 = dl - dl / cl * (bigU - ul);
+		R4 = dr + dr / cr * (bigU - ur);
+		if (bigU > 0) bigR = R3;
+		else bigR = R4;
+	}
+
+	u = bigU;
+	p = bigP;
+	d = bigR;
+
+}
+
 
 void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss)
 {
@@ -484,51 +500,6 @@ void starpu(double &p, double &u, double dl, double ul, double pl, double cl, do
 	u = 0.5 * (ul + ur + fr - fl);
 }
 
-/* Linear solver */
-void linear(double dl, double ul, double pl, double dr, double ur, double pr, double &d, double &u, double &p) // передача параметров по ссылке
-{
-	double bigU, bigP, bigS, bigR, cl, cr, help, hl, hr, R3, R4;
-
-	cl = sqrt(GAMMA*pl / dl);
-	cr = sqrt(GAMMA*pr / dr);
-	hl = 1.0 / (dl*cl);
-	hr = 1.0 / (dr*cr);
-
-
-	
-	if (ul > cl)
-	{
-		bigP = pl;
-		bigU = ul;
-		bigR = dl;
-
-	}
-	else if (ur < -cr)
-	{
-		bigP = pr;
-		bigU = ur;
-		bigR = dr;
-	}
-	else
-	{
-		bigP = (ul - ur + pl / (dl*cl) + pr / (dr*cr)) / (hl + hr);
-		bigU = (dl*cl*ul + dr*cr*ur + pl - pr) / (dl*cl + dr*cr);
-	/*	if (bigU >= 0) bigS = pl / pow(dl, GAMMA);
-		else bigS = pr / pow(dr, GAMMA);
-		help = bigP / bigS;
-		bigR = pow(help, 1.0 / GAMMA);*/
-		R3 = dl - dl / cl * (bigU - ul);
-		R4 = dr + dr / cr * (bigU - ur);
-		if (bigU > 0) bigR = R3;
-		else bigR = R4;
-	}
-	
-	u = bigU;
-	p = bigP;
-	d = bigR;
-
-}
-
 void mem_alloc(int numcells, double* *arr, int align)
 {
 	*arr = (double*)_mm_malloc(numcells * sizeof(double), align);
@@ -560,7 +531,7 @@ void first_step_validation(FILE *file3, int numcells, int c_c, double timer, dou
 
 void linear_check(double dl, double ul, double pl, double dr, double ur, double pr, int &left, int &middle, int &right, int numb)
 {
-	double bigU, bigP, bigS, bigR, cl, cr, help, hl, hr;
+	double cl, cr, help, hl, hr;
 	cl = sqrt(GAMMA*pl / dl);
 	cr = sqrt(GAMMA*pr / dr);
 	hl = 1.0 / (dl*cl);
@@ -660,7 +631,7 @@ double initial_density(double x)
 			else if (x <= 0.3) return 4.875;
 			else return 3;
 	case 7: if (x < DISC_POINT) return 1.0;
-			else return 2.0;
+			else return 1.0; // 2.0
 	case 8: if (x <= 0.05) return st_R1;
 			else if (x <= 0.3) return st_R2;
 			else return st_R3;
@@ -838,7 +809,7 @@ void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer
 	FILE* fout, *fout_NC;
 	char FileName[255], FileName2[255];
 	double dx = LENGTH / double(numcells);
-	double x, ps, us, ds, cs, es, es_d;
+	double ps, us, ds, cs, es, es_d;
 	double D_analit = 1.371913;
 
 	int proverka[N_smooth] = { 0 };
@@ -1109,9 +1080,9 @@ void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P)
 {
 	/* Rarify wave - numeric vs analitic */
 	double c, l0, A, tt;
-	double q1, q2, q3, q4, q5, q6, q7, q8, q11;
 	double iu_l, id_l, ip_l, iu_r, id_r, ip_r;
 	double x, x_NC, xl, xr;
+	double q1, q11, q2, q3;
 	int check1 = 0, check2 = 0;
 
 	double dx = LENGTH / double(numcells);
@@ -1330,7 +1301,7 @@ void analitical_riemann_modeling(int numcells, double ro1, double u1, double p1,
 	double R1, R2;
 	int numcells2 = numcells / 2;
 	double c1, C, prop, r0, A, tt;
-	double q1, q2, q3, q4, q5, q6, q7, q8, q11;
+	double q1, q2, q3, q4, q6, q7;
 	int static ex_sol = 0;
 
 	double v1, V;
@@ -1451,6 +1422,19 @@ void analitical_riemann_modeling(int numcells, double ro1, double u1, double p1,
 	free(xx);
 }
 
+void null_array(double *arr, int a, int b)
+{
+	for (int i = a; i < b; i++)
+		arr[i] = 0.0;
+}
+
+void null_array(int *arr, int a, int b)
+{
+	for (int i = a; i < b; i++)
+		arr[i] = 0;
+}
+
+
 void difference_analitical_riemann_Linf(int numb, double *R, double *U, double *P, double *R_D, double *R_U, double *R_P, double &delta_ro, double &delta_u, double &delta_p)
 {
 	double dx = LENGTH / double(nmesh[numb]);
@@ -1466,7 +1450,7 @@ void difference_analitical_riemann_Linf(int numb, double *R, double *U, double *
 	mem_alloc(new_numcells, &difference_U, 32);
 	mem_alloc(new_numcells, &difference_P, 32);
 
-	x_lay[0:nmesh[numb]] = 0;
+	null_array(x_lay, 0, nmesh[numb]);
 	delta_ro = 0;
 	delta_u = 0;
 	delta_p = 0;
@@ -1842,10 +1826,9 @@ void runge(double *massiv, int lda, int numb)
 void analitical_writing_into_file(int numcells, double* R_D, double*R_U, double*R_P, double timer)
 {
 	FILE* fout;
-	FILE* plot;
 	double x, x_NC;
 	double dx = LENGTH / double(numcells);
-	char name1[255], name2[255];
+	char name1[255];
 
 	double D_analit;
 	double ro_right, ro_left, u_right, u_left;

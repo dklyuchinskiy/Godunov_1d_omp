@@ -684,7 +684,7 @@ void gnuplot_analitical_riemann(int numcells, double* R, double*U, double*P, dou
 	FILE* plot;
 	char name[255];
 	double dx = LENGTH / double(numcells);
-	double ds, us, ps, x;
+	double x;
 
 	sprintf(name, "N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
 	fout = fopen(name, "w");
@@ -739,10 +739,9 @@ void gnuplot_analitical_riemann(int numcells, double* R, double*U, double*P, dou
 
 void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 {
-	FILE* fout, *plot;
-	char name1[255], name2[255];
+	FILE *plot;
+	char name1[255];
 	double dx = LENGTH / double(numcells);
-	double ds, us, ps, x;
 	double time_control[N_smooth];
 	double k_step = time_max_array[PROBLEM] / N_smooth;
 	printf("step %lf\n", k_step);
@@ -754,8 +753,8 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 	{
 		if (i == 3) continue;
 		/*----------------------------------------*/
-		sprintf(name2, "N%03d_P%1d_riemann_analit.plt", numcells, PROBLEM);
-		plot = fopen(name2, "w");
+		sprintf(name1, "N%03d_P%1d_riemann_analit.plt", numcells, PROBLEM);
+		plot = fopen(name1, "w");
 
 		fprintf(plot, "reset\n\
 					   clear\n\n\
@@ -838,7 +837,7 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 		fprintf(plot, "\n\n");
 
 		fclose(plot);
-		if (i == 4) system(name2);
+		if (i == 4) system(name1);
 
 	}
 }
@@ -846,7 +845,7 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 void gnuplot_last_step(int numcells, double dx, double D_analit, double *R, double *U, double *P)
 {
 	double us, cs, ps, ds, ss;
-	double x, x_NC;
+	double x;
 	char FileName[255];
 	FILE *fout;
 #ifndef RP

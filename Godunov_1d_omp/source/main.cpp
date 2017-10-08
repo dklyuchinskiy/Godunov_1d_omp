@@ -13,13 +13,14 @@ int main()
 	double ITER_TIME[NUM_ITER] = { 0 };
 
 #ifdef INTEGRAL
-	run[0:NUM_ITER] = 1;
+	for (int i = 0; i < NUM_ITER; i++)
+		run[i] = 1;
 #else
 	run[0] = 1;
 	run[1] = 1;
 	run[2] = 1;
 	run[3] = 1;
-	run[4] = 0;
+	run[4] = 1;
 	run[5] = 0;
 	run[6] = 0;
 #endif
