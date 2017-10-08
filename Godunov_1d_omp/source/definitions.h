@@ -15,7 +15,7 @@
 
 //#define FIRST printf("The first output: only first 100 dots\n"); // For 1 task: NC, SECOND 
 #define SECOND printf("The second output: printing all dots\n");
-#define PRINT printf("Printing with GNUPLOT is set up\n");
+//#define PRINT printf("Printing with GNUPLOT is set up\n");
 //#define P_PLUS_PG printf("Printing new task about pressure and pressure gradient");
 //#define SW_FINITE_DIFF  printf("Its a work with shock wave and right parts. We are determinating the wavelength\n")
 //#define RW_NUM_ANALITICAL  printf("We are conculating the difference between numeric and analitical solvers\n")   // если установлен этот макрос, то print не нуженropy 
@@ -57,7 +57,7 @@
 #define EPS		1.0e-6	// точность решения нелинейного уравнения
 #define MAX_ITER	20	// количество итераций для решения нелинейного уравнения
 
-#define PROBLEM		7
+#define PROBLEM		0
 /*
 0 - shock wave
 1 - rarify wave

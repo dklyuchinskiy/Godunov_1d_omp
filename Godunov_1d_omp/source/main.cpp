@@ -17,9 +17,9 @@ int main()
 		run[i] = 1;
 #else
 	run[0] = 1;
-	run[1] = 1;
+	run[1] = 0;
 	run[2] = 1;
-	run[3] = 1;
+	run[3] = 0;
 	run[4] = 1;
 	run[5] = 0;
 	run[6] = 0;
@@ -36,6 +36,9 @@ int main()
 		gnuplot_one_iteration(nmesh[i]);
 #endif
 	}
+
+	double time = 0.4500;
+	gnuplot_all_iter_one_time(run, 4, time);
 
 	double duration;
 	duration = (double)(clock() - start) / CLOCKS_PER_SEC;

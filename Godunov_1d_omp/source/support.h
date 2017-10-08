@@ -44,12 +44,14 @@ void first_step_validation(FILE *file, int numcells, int c_c, double timer, doub
 void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *UFLUX);
 void null_array(double *arr, int a, int b);
 void null_array(int *arr, int a, int b);
+void set_bound(FILE *plot, int i);
 // Gnuplot
 
 void gnuplot_one_iteration(int numcells);
 void gnuplot_RW_DIFF(int numcells);
 void gnuplot_RW_NUM_ANALITIC(int numcells);
 void gnuplot_P_PLUS_PG(int numcells);
+void gnuplot_all_iter_one_time(int run[NUM_ITER], int numb, double time);
 void gnuplot_all_iterations_NC(int numb);
 void gnuplot_one_it_NC();
 void gnuplot_conservative(int numb);

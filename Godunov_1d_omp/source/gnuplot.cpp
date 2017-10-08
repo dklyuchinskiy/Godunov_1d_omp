@@ -177,6 +177,54 @@ void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth],
 	return;
 }
 
+void gnuplot_all_iter_one_time(int run[NUM_ITER], int numb, double time)
+{
+	FILE* plot;
+	char FileName[255];
+	double time_control[N_smooth];
+	double k_step = time_max_array[PROBLEM] / N_smooth;
+	for (int i = 0; i < N_smooth; i++)
+	{
+		time_control[i] = (i + 1)*k_step;
+		if (fabs(time_control[i] - time) < EPS) time = time_control[i]; // do not forget to set up an absolute value
+	}
+	for (int i = 0; i < 6; i++) // for each parameter of gas
+	{
+		if (i == 3) continue;
+		plot = fopen("all_iter.plt", "w");
+		set_bound(plot, i);
+		fprintf(plot, "set output 'workspace/all_iter_one_time%6.4f_P%1d_%c_%c.png' \n\n", time, PROBLEM, (char)TYPE, prop[i]);
+		fprintf(plot, "plot ");
+
+		for (int j = 0; j <= numb; j++)
+		{
+			if (run[j] != 0)
+			{
+				int numcells = 100 * pow(3, j);
+				fprintf(plot, "'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title \"N = %03d\"", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, time, i + 2, numcells);
+				if (j < numb) fprintf(plot, ", ");
+			}
+
+		}
+		fclose(plot);
+		system("all_iter.plt");
+	}
+}
+
+void set_bound(FILE *plot, int i)
+{
+		fprintf(plot, "set term png font \"Times - Roman, 16\"\n\n");
+		if (PROBLEM == 0 || PROBLEM == 18) fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", left_SW[i], right_SW[i]);
+		if (PROBLEM == 1) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_RW[i], right_RW[i]);
+		if (PROBLEM == 2 || PROBLEM == 17) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_ST[i], right_ST[i]);
+		if (PROBLEM == 3)  fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", -1.0, 1.0);
+		if (PROBLEM == 8 || PROBLEM == 20)  fprintf(plot, "set yrange[%9.8f:%9.8f]\n\n", left_RW_RW[i], right_RW_RW[i]);
+		if (PROBLEM == 5) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_2RR[i], right_2RR[i]);
+		if (PROBLEM == 19) fprintf(plot, "set yrange[%3.2f:%3.2f]\n\n", left_19[i], right_19[i]);
+		if (PROBLEM == 7) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_7[i], right_7[i]);
+		if (PROBLEM == 4) fprintf(plot, "set yrange[%5.4f:%5.4f]\n\n", left_RW2_RW2[i], right_RW2_RW2[i]);
+}
+
 void gnuplot_n_smooth3(int numcells)
 {
 	FILE* plot;
