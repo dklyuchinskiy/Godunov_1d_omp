@@ -44,8 +44,8 @@ void linear_solver(int numcells, double* R, double* U, double* P, double* dss, d
 				pss[i] = (U[i - 1] - U[i] + P[i - 1] * H[i - 1] + P[i] * H[i]) / (H[i - 1] + H[i]);
 				uss[i] = (RC[i - 1] * U[i - 1] + RC[i] * U[i] + P[i - 1] - P[i]) / (RC[i - 1] + RC[i]);
 
-				if (uss[i] > 0) dss[i] = R[i - 1] - R[i - 1] / C[i - 1] * (uss[i] - U[i - 1]);
-				else dss[i] = R[i] + R[i] / C[i] * (uss[i] - U[i]);
+			    if (uss[i] > 0) dss[i] = R[i - 1] - R[i - 1] / C[i - 1] * (uss[i] - U[i - 1]);
+			    else dss[i] = R[i] + R[i] / C[i] * (uss[i] - U[i]);
 
 			}
 
@@ -54,6 +54,10 @@ void linear_solver(int numcells, double* R, double* U, double* P, double* dss, d
 		LOOP_TIME[2][omp_get_thread_num()] += wtime;
 		if (last) printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[2][omp_get_thread_num()]);
 	}
+
+	delete[] RC;
+	delete[] C;
+	delete[] H;
 }
 
 /* Scalar linear solver */
@@ -182,25 +186,6 @@ void boundary_conditions(int numcells, double *dss, double *uss, double *pss, do
 	s0 = log(P[0] / pow(R[0], GAMMA));
 	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
 
-#elif (PROBLEM == 4)
-	// set pressure
-	pss[0] = 4.0 / exp(3.0*timer / time_max);
-	//	pss[numcells] = initial_pressure(LENGTH);
-
-	c0 = sqrt(GAMMA*P[0] / R[0]);
-	//	cn = sqrt(GAMMA*P[numcells] / R[numcells]);
-
-	double l0_const = U[0] - P[0] / (R[0] * c0);
-	double rn_const = U[numcells] + P[numcells] / (R[numcells] * cn);
-
-	uss[0] = l0_const + pss[0] / (R[0] * c0);
-	//	uss[numcells] = rn_const - pss[numcells] / (R[numcells] * cn);
-
-	s0 = log(P[0] / pow(R[0], GAMMA));
-	//	sn = log(P[numcells] / pow(R[numcells], GAMMA));
-
-	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
-	//	dss[numcells] = pow(pss[numcells] / S[numcells], 1.0 / GAMMA);
 
 #elif (PROBLEM == 3)
 	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
@@ -622,7 +607,8 @@ double initial_density(double x)
 		/*	case 4: if (x <= DISC_POINT) return 1.271413930046081;
 		else if (x >= 1.0 - DISC_POINT) return 1.271413930046081;
 		else return 1.0;*/
-	case 4: return R0;
+	case 4: if (x <= DISC_POINT) return 3.0;
+			else return 2.0;
 
 	case 5: if (x <= 3.0) return 6;
 			else if (x >= 7.0) return 6;
@@ -681,14 +667,14 @@ double initial_pressure(double x)
 			else
 				return 0.466727;*/
 
-	case 2:	if (x <= 0.5)
-		return 2.0;
+	case 2:	if (x <= DISC_POINT) return 2.0;
 			else return 1.0;
 	case 3:	return 1.0;
 		/*case 4: if (x <= DISC_POINT) return 1.401789770179879;
 		else if (x >= 1.0 - DISC_POINT) return 1.401789770179879;
 		else return 1.0;*/
-	case 4: return 0.0;
+	case 4: if (x <= DISC_POINT) return 2.0;
+			else return 1.0;
 
 	case 5: if (x <= 3.0) return 7;
 			else if (x >= 7.0) return 7;
@@ -760,7 +746,8 @@ double initial_velocity(double x)
 		/*case 4: if (x <= DISC_POINT) return 0.292868067614595;
 		else if (x >= 1.0 - DISC_POINT) return 0.292868067614595;
 		else return 0.0;*/
-	case 4: return 0;
+	case 4: if (x <= DISC_POINT) return 4.0;
+			else return 2.0;
 
 	case 5: if (x <= 3.0) return 0;
 			else if (x >= 7.0) return 0.0;

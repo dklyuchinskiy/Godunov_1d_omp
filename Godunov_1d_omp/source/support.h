@@ -6,7 +6,6 @@ void prefun(double &f, double &fd, double &p, double &dk, double &pk, double &ck
 double guessp(double dl, double ul, double pl, double cl, double dr, double ur, double pr, double cr);
 void starpu(double &p, double &u, double dl, double ul, double pl, double cl, double dr, double ur, double pr, double cr);
 
-void iteration(int numb);
 void nonlinear_solver(int numcells, double *R, double *U, double *P, double *dss, double *uss, double *pss);
 void linear_solver(int numcells, double *R, double *U, double *P, double *dss, double *uss, double *pss, int last);
 void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double tau, double *t, double *UFLUX);

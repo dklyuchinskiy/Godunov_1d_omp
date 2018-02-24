@@ -21,7 +21,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	double *exact_R, *exact_U, *exact_P, *exact_RE, *exact_S;		// exact values
 	double *diff_R, *diff_U, *diff_P, *diff_RE, *diff_S;			// diff of analyt and numerical functions
 	double *diff;													// for this array the memory is allocated inside function 
-	double *x_init, *x_layer;										// coordinates
+	double *x_init, *x_n, *x_n1;									// coordinates
 
 	int numcells, start_print, jump_print, left_index, right_index;
 	int iter = 0, count = 0, last = 0;
@@ -83,20 +83,25 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	mem_alloc(numcells, &S_prev, 32);
 	mem_alloc(numcells, &S_diff, 32);
 
-	mem_alloc(numcells, &x_layer, 32);
+	mem_alloc(numcells, &x_n, 32);
+	mem_alloc(numcells, &x_n1, 32);
 	mem_alloc(numcells, &x_init, 32);
 
+#if defined(DIFF_ANALIT_RIEMANN) && defined(L1_NORM)
 	mem_alloc(numcells, &exact_R, 32);
 	mem_alloc(numcells, &exact_U, 32);
 	mem_alloc(numcells, &exact_P, 32);
 	mem_alloc(numcells, &exact_S, 32);
 	mem_alloc(numcells, &exact_RE, 32);
+#endif
 
+#ifdef INTEGRAL
 	mem_alloc(numcells, &diff_R, 32);
 	mem_alloc(numcells, &diff_U, 32);
 	mem_alloc(numcells, &diff_P, 32);
 	mem_alloc(numcells, &diff_S, 32);
 	mem_alloc(numcells, &diff_RE, 32);
+#endif
 
 	mem_alloc(numcells + 1, &FR, 32);
 	mem_alloc(numcells + 1, &FRU, 32);
@@ -125,17 +130,19 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	
 	printf("\nIteration %d\n", numb + 1);
 
-	clock_t start_t, end_t;
-	clock_t loop_time;
-	start_t = clock();
+	double start_t, end_t;
+	double loop_time;
+	start_t = omp_get_wtime();
 
 	/* Mesh */
 #pragma omp for simd schedule(simd:static)
 	for (int i = 0; i < numcells; i++)
 	{
 		x_init[i] = i*dx + 0.5*dx;          // that are middles of cells
-		x_layer[i] = x_init[i];
+		x_n[i] = x_init[i];
 	}
+
+	printf("Size of problem: %d\n", numcells);
 
 	/* Initial conditions */
 	printf("Loop 0\n");
@@ -195,7 +202,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	{
 		iter++;
 		
-		loop_time = clock();
+		loop_time = omp_get_wtime();
 #pragma omp parallel firstprivate(u1,u2,u3,u_loc) shared(u_max) num_threads(OMP_CORES)
 		{
 			/* CFL condition */
@@ -213,7 +220,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 #pragma omp critical
 			if (u_loc > u_max) u_max = u_loc;
 		}
-		cfl_time += (double)(clock()-loop_time) / CLOCKS_PER_SEC;
+		cfl_time += omp_get_wtime() - loop_time;
 		
 #ifdef CFL_SWITCH
 		CFL = timer < time_max / 2 ? CFL08 : CFL04;
@@ -241,17 +248,17 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 		else
 		{
 			if (last) printf("Loop 2\n");
-			loop_time = clock();
+			loop_time = omp_get_wtime();
 		
 			linear_solver(numcells, R, U, P, dss, uss, pss, last);
 
-			loop_full[2] += (double)(clock() - loop_time) / CLOCKS_PER_SEC;
+			loop_full[2] += omp_get_wtime() - loop_time;
 			if (last) printf("Full time loop: %lf\n", loop_full[2]);
 		}
 
 		/* Computation of flux variables */
 		if (last) printf("Loop 3\n");
-		loop_time = clock();
+		loop_time = omp_get_wtime();
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 		{
 			wtime = omp_get_wtime();
@@ -267,13 +274,18 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 			LOOP_TIME[3][omp_get_thread_num()] += wtime;
 			if (last) printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[3][omp_get_thread_num()]);
 		}
-		loop_full[3] += (double)(clock() - loop_time) / CLOCKS_PER_SEC;
+		loop_full[3] += omp_get_wtime() - loop_time;
 		if (last) printf("Full time loop: %lf\n", loop_full[3]);
 
+		/* Euler coordinates */
+		for (int i = 0; i < numcells; i++)
+		{
+			x_n1[i] = x_n[i] + tau * UFLUX[i];
+		}
 
 		/* Computation of conservations laws (in conservative variables!) */
 		if (last) printf("Loop 4\n");
-		loop_time = clock();
+		loop_time = omp_get_wtime();
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 		{
 			wtime = omp_get_wtime();
@@ -284,16 +296,16 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 				RU[i] = RU[i] - dtdx * (FRU[i + 1] - FRU[i]);
 				RE[i] = RE[i] - dtdx * (FRE[i + 1] - FRE[i]);
 			}
-			wtime = omp_get_wtime() - wtime;
+			wtime = omp_get_wtime() - loop_time;
 			LOOP_TIME[4][omp_get_thread_num()] += wtime;
 			if (last) printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[4][omp_get_thread_num()]);
 		}
-		loop_full[4] += (double)(clock() - loop_time) / CLOCKS_PER_SEC;
+		loop_full[4] += omp_get_wtime() - loop_time;
 		if (last) printf("Full time loop: %lf\n", loop_full[4]);
 
 		/* Over-computation of velocity, pressure and entropy */
 		if (last) printf("Loop 5\n");
-		loop_time = clock();
+		loop_time = omp_get_wtime();
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 		{
 			wtime = omp_get_wtime();
@@ -310,7 +322,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 			LOOP_TIME[5][omp_get_thread_num()] += wtime;
 			if (last) printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[5][omp_get_thread_num()]);
 		}
-		loop_full[5] += (double)(clock() - loop_time) / CLOCKS_PER_SEC;
+		loop_full[5] += omp_get_wtime() - loop_time;
 		if (last) printf("Full time loop: %lf\n", loop_full[5]);
 
 #if (PROBLEM==0)
@@ -336,14 +348,17 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 		/* Output to file during computations */
 #if defined(OUTPUT_N_SMOOTH) && defined(PRINT)
 #if (PROBLEM == 18)
-		file_n_smooth_steps(numcells, timer, tau, x_layer, R, U, P, RE, S, S_diff, UFLUX);
+		file_n_smooth_steps(numcells, timer, tau, x_n1, R, U, P, RE, S, S_diff, UFLUX);
 #else
 		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, UFLUX);
 #endif
 #endif
 		/* Euler coordinates */
+#pragma omp parallel for simd schedule(simd:static)
 		for (int i = 0; i < numcells; i++)
-			x_layer[i] = x_layer[i] + tau * UFLUX[i];
+		{
+			x_n[i] = x_n1[i];
+		}
 
 		/* Moving of boundaries */
 #ifdef FLUX_COUNT
@@ -384,8 +399,8 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	F_ro[2 + ldf * numb] = sum_m[0][3] - sum_m[1][3] + sum_m[2][3] - sum_m[3][3];
 #endif
 
-	end_t = clock();
-	double duration = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+	end_t = omp_get_wtime();
+	double duration = end_t - start_t;
 
 	printf("Iteration %d time: %lf\n", numb + 1, duration);
 	ITER_TIME[numb] = duration;
@@ -415,7 +430,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 #else
 	gnuplot_last_step(numcells, dx, D_analit, R, U, P);
 #if (PROBLEM==2 || PROBLEM==9)
-	gnuplot_analitical_riemann2(numcells, w_num_r, w_num_u, w_num_p);
+//	gnuplot_analitical_riemann2(numcells, w_num_r, w_num_u, w_num_p);
 #endif
 #endif
 #endif
@@ -436,19 +451,24 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 	mem_free(&uss);
 	mem_free(&pss);
 
+#if defined(DIFF_ANALIT_RIEMANN) && defined(L1_NORM)
 	mem_free(&exact_U);
 	mem_free(&exact_R);
 	mem_free(&exact_P);
 	mem_free(&exact_RE);
 	mem_free(&exact_S);
+#endif
 
+#ifdef INTEGRAL
 	mem_free(&diff_U);
 	mem_free(&diff_R);
 	mem_free(&diff_P);
 	mem_free(&diff_RE);
 	mem_free(&diff_S);
+#endif
 
-	mem_free(&x_layer);
+	mem_free(&x_n1);
+	mem_free(&x_n);
 	mem_free(&x_init);
 
 #ifdef DEBUG

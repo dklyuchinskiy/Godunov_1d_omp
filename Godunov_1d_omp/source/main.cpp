@@ -3,7 +3,8 @@
 
 int main()
 {
-	clock_t start;
+	double start;
+	double duration;
 
 	int i = 0;
 	int run[NUM_ITER];
@@ -16,18 +17,18 @@ int main()
 	for (int i = 0; i < NUM_ITER; i++)
 		run[i] = 1;
 #else
-	run[0] = 1;
+	run[0] = 0;
 	run[1] = 0;
-	run[2] = 1;
+	run[2] = 0;
 	run[3] = 0;
-	run[4] = 1;
-	run[5] = 0;
+	run[4] = 0;
+	run[5] = 1;
 	run[6] = 0;
 #endif
 
 #if 1
 
-	start = clock();
+	start = omp_get_wtime();
 	for (i = 0; i < NUM_ITER; i++) // Iterations   //there is dependence between iterations!!! its impossible to start new iteration before last ends
 	{
 		if (run[i] == 1) iteration(i, F_ro, ITER_TIME);
@@ -37,11 +38,20 @@ int main()
 #endif
 	}
 
-	double time = 0.4500;
-	gnuplot_all_iter_one_time(run, 4, time);
+	// P_0 : timing 0.35
+	double time = 0.3450;
+	// P_1 : timing 0.3500
+	time = 0.0375;
+	// P_2 : timing 0.0075, 0.015, 0.0225, 0.03, 0.075, 0.2250
+	//time = 0.2250;
 
-	double duration;
-	duration = (double)(clock() - start) / CLOCKS_PER_SEC;
+	// P_7: timing 0.1500
+	time = 0.1500;
+	// P_4: timing 
+	time = 0.04;
+	// gnuplot_all_iter_one_time(run, 4, time);
+
+	duration = omp_get_wtime() - start;
 
 	int ldf = 4;
 

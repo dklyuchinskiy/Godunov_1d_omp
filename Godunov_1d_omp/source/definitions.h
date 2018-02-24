@@ -15,14 +15,14 @@
 
 //#define FIRST printf("The first output: only first 100 dots\n"); // For 1 task: NC, SECOND 
 #define SECOND printf("The second output: printing all dots\n");
-//#define PRINT printf("Printing with GNUPLOT is set up\n");
+#define PRINT printf("Printing with GNUPLOT is set up\n");
 //#define P_PLUS_PG printf("Printing new task about pressure and pressure gradient");
 //#define SW_FINITE_DIFF  printf("Its a work with shock wave and right parts. We are determinating the wavelength\n")
 //#define RW_NUM_ANALITICAL  printf("We are conculating the difference between numeric and analitical solvers\n")   // если установлен этот макрос, то print не нуженropy 
 //#define SIMPLE printf("The simple print")
 //#define INTEGRAL printf("Integrals are computed")
 //#define FIVE_T_STEPS
-#define OUTPUT_N_SMOOTH
+//#define OUTPUT_N_SMOOTH
 //#define DIFF_ANALIT_RIEMANN
 //#define BOOST
 #define OMP
@@ -35,7 +35,7 @@
 //#define BOUND_COND
 //#define DEBUG
 
-#if (PROBLEM < 3 || PROBLEM == 7)
+#if (PROBLEM < 3 || PROBLEM == 7 || PROBLEM == 4)
 //#define FLUX_COUNT
 #endif
 
@@ -44,7 +44,7 @@
 #undef PRINT
 #endif
 
-#define NUM_ITER 6
+#define NUM_ITER 7
 
 #define GRID 3
 
@@ -57,13 +57,13 @@
 #define EPS		1.0e-6	// точность решения нелинейного уравнения
 #define MAX_ITER	20	// количество итераций для решения нелинейного уравнения
 
-#define PROBLEM		0
+#define PROBLEM		2
 /*
 0 - shock wave
 1 - rarify wave
 2 - shock tube
 3 - periodic continious
-4 - задача с отклом
+4 - shock tube with 2 shock waves
 5 - two shock tube (распад разрыва) в x=4 и x=6
 6 - волна разрежения x=6 догоняет ударную волну в x=7; x=20
 7 - две волны разрежения в разные стороны
@@ -89,7 +89,7 @@
 #define X1 0.05
 #define X2 0.95
 #define T1 0.0
-#define T2 0.3
+#define T2 0.5
 #endif
 
 //#define EXACT_DISC
@@ -184,7 +184,7 @@
 #elif (PROBLEM == 2 || PROBLEM == 9)
 #define DISC_POINT 0.5
 #elif (PROBLEM == 4)
-#define DISC_POINT 0.0
+#define DISC_POINT 0.5
 #elif (PROBLEM == 5)
 #define DISC_POINT 0
 #elif (PROBLEM == 6)
@@ -285,6 +285,9 @@ extern float right_RW3_RW3[];
 
 extern float left_RP[];
 extern float right_RP[];
+
+extern float left_SW_SW[];
+extern float right_SW_SW[];
 
 // iteration.cpp
 // R U P
