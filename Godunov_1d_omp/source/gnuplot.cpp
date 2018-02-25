@@ -1,10 +1,24 @@
 #include "definitions.h"
 #include "support.h"
 
-/****************************************
+/****************************************************
 Source file contains functions responsible
 for printing the results of output
 using GNUPLOT application.
+
+To enable automatic output, please set #define PRINT in the definitions.h
+
+The output directory must consists of special folders.
+The structure is the following:
+
+If you use Windows OS with Microsoft Visual Studio IDE, build the folder 'workspace' in the folder with .vcxproj file.
+If you use Linux OS, build the folder 'workspace' in the folder with a.out file.
+
+The 'workspace' folder must have the structure:
+1) The folders, corresponding to the used grid points: 100, 300, 900, ..., 24300,...
+2) Each of this folders should have five subfolders: D, P, S, R, U - for the gas values.
+3) Each of the previous folder should contain the subfolder with the name of the problem: P_0, P_1, P_2, ..., P_20, ...
+
 ****************************************/
 
 void gnuplot_n_smooth(int numb)
