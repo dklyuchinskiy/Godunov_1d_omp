@@ -31,7 +31,6 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	double u1 = 0, u2 = 0, u3 = 0, u_loc = 0, u_max = 0;
 	double D_analit = 0;
 	double delta_ro, delta_u, delta_p;
-	double cfl_time = 0;
 
 	char FileName[255], FileName2[255];
 	double sum_m[4][4] = { 0 };
@@ -135,7 +134,10 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	printf("\nIteration %d\n", numb + 1);
 
 	double start_t, end_t;
-	double loop_time;
+	double loop_time = 0;
+	double bound_time = 0;
+	double cfl_time = 0;
+
 	start_t = omp_get_wtime();
 
 	/* Mesh */
@@ -184,7 +186,6 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 
 	/*** To get some information before the start ***/
 	inf_before_start(numcells, R, U, P, D_analit);
-
 
 	/***** Computational loop *****/
 
@@ -242,7 +243,10 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		dtdx = tau / dx;
 
 		/* Boundary conditions */
+		loop_time = omp_get_wtime();
 		boundary_conditions(numcells, dss, uss, pss, R, U, P);
+		bound_time += omp_get_wtime() - loop_time;
+		if (last) printf("Boundary_conditions loop: %lf\n", bound_time);
 
 		/* Nonlinear or linear Godunov scheme */
 		if (timer < CROSS_POINT)
@@ -282,6 +286,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		if (last) printf("Full time loop: %lf\n", loop_full[3]);
 
 		/* Euler coordinates */
+#pragma omp parallel for simd schedule(simd:static)
 		for (int i = 0; i < numcells; i++)
 		{
 			x_n1[i] = x_n[i] + tau * UFLUX[i];
@@ -295,7 +300,6 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #pragma omp for simd schedule(simd:static)
 			for (int i = 0; i < numcells; i++)
 			{
-	
 				R[i] = R[i] - dtdx * (FR[i + 1] - FR[i]);
 				RU[i] = RU[i] - dtdx * (FRU[i + 1] - FRU[i]);
 				RE[i] = RE[i] - dtdx * (FRE[i + 1] - FRE[i]);
