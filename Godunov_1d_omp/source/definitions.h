@@ -44,7 +44,7 @@
 #undef PRINT
 #endif
 
-#define NUM_ITER 7
+#define NUM_ITER 8
 
 #define GRID 3
 
