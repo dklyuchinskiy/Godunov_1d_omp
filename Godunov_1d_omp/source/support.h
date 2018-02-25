@@ -1,6 +1,10 @@
+#pragma once
+/*************************
+Header file for templates
+**************************/
+
 
 // Kernel
-
 void sample(double &pm, double &um, double &s, double dl, double ul, double pl, double cl, double dr, double ur, double pr, double cr, double &d, double &u, double &p);
 void prefun(double &f, double &fd, double &p, double &dk, double &pk, double &ck);
 double guessp(double dl, double ul, double pl, double cl, double dr, double ur, double pr, double cr);
@@ -44,8 +48,10 @@ void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer
 void null_array(double *arr, int a, int b);
 void null_array(int *arr, int a, int b);
 void set_bound(FILE *plot, int i);
-// Gnuplot
+void output_last_step(int numcells, double dx, double D_analit, double *R, double *U, double *P);
 
+
+// Gnuplot
 void gnuplot_one_iteration(int numcells);
 void gnuplot_RW_DIFF(int numcells);
 void gnuplot_RW_NUM_ANALITIC(int numcells);
@@ -62,5 +68,3 @@ void gnuplot_n_smooth(int numb);
 void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth], int sw3[3][N_smooth]);
 void gnuplot_n_smooth3(int numcells);
 void gnuplot_analitical_riemann2(int numcells, int *n_r, int *n_u, int *n_p);
-void gnuplot_last_step(int numcells, double dx, double D_analit, double *R, double *U, double *P);
-

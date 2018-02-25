@@ -1,6 +1,21 @@
 #include "definitions.h"
 #include "support.h"
 
+/*****************************************************************************************
+Test file runs the function iteration() for different grid sizes.
+
+Use array 'int run[NUM_ITER]' to set the grid size you want to run. 
+For example, run[i] = 1  allows to run iteration i which correspond
+to respective grid size, otherwise, run[i] = 0.
+Grid sizes are already set in arrays.cpp
+
+Also, the computation of accuracy can be enabled if #define INTEGRAL is turn on.
+
+Compilation with Intel Compiler:
+icc -ipo -O2 -qopenmp -o a.out main.cpp functions.cpp iteration.cpp gnuplot.cpp arrays.cpp
+******************************************************************************************/
+
+
 int main()
 {
 	double start;
@@ -22,9 +37,9 @@ int main()
 	run[2] = 0;
 	run[3] = 0;
 	run[4] = 0;
-	run[5] = 0;
+	run[5] = 1;
 	run[6] = 0;
-	run[7] = 1;
+	run[7] = 0;
 #endif
 
 #if 1

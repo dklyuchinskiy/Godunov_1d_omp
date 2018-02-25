@@ -1,3 +1,16 @@
+#pragma once
+/*****************************
+Header file for preprocessor 
+definitions and extern pattern 
+of arrays from arrays.cpp
+
+Each definition correspond to some
+additional job performed during
+work of the scheme.
+
+User can uncomment needed #define
+to enable the respective job.
+*****************************/
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
@@ -10,30 +23,11 @@
 
 /************** MACRO ****************/
 
-//#define NC printf("Coordinates of shockwave is setted up\n");  // It influences on output in .dat file
-//#define NC2 // (x-x0-Dt)/h
+// 1) General preprocessor definition
 
-//#define FIRST printf("The first output: only first 100 dots\n"); // For 1 task: NC, SECOND 
-#define SECOND printf("The second output: printing all dots\n");
-#define PRINT printf("Printing with GNUPLOT is set up\n");
-//#define P_PLUS_PG printf("Printing new task about pressure and pressure gradient");
-//#define SW_FINITE_DIFF  printf("Its a work with shock wave and right parts. We are determinating the wavelength\n")
-//#define RW_NUM_ANALITICAL  printf("We are conculating the difference between numeric and analitical solvers\n")   // если установлен этот макрос, то print не нуженropy 
-//#define SIMPLE printf("The simple print")
-//#define INTEGRAL printf("Integrals are computed")
-//#define FIVE_T_STEPS
-//#define OUTPUT_N_SMOOTH
-//#define DIFF_ANALIT_RIEMANN
-//#define BOOST
-#define OMP
-//#define RP
-//#define L1_NORM
-//#define ENTROPY_CHECK
-//#define SW_POINTS_PRINT
-//#define CFL_SWITCH
-//#define DIFF_ANALYT
-//#define BOUND_COND
-//#define DEBUG
+//#define PRINT printf("Printing with GNUPLOT is set up\n");
+#define OUTPUT_N_SMOOTH printf("Output to several files. One file = one layer")
+//#define INTEGRAL printf("Computation of accuracy via using counter integrals")
 
 #if (PROBLEM < 3 || PROBLEM == 7 || PROBLEM == 4)
 //#define FLUX_COUNT
@@ -44,6 +38,25 @@
 #undef PRINT
 #endif
 
+// 2) Other processing
+
+//#define NC printf("Coordinates of shockwave is setted up\n");  // It influences on output in .dat file
+//#define NC2 // (x-x0-Dt)/h
+//#define P_PLUS_PG printf("Printing new task about pressure and pressure gradient");
+//#define SW_FINITE_DIFF  printf("Its a work with shock wave and right parts. We are determinating the wavelength\n")
+//#define RW_NUM_ANALITICAL  printf("We are conculating the difference between numeric and analitical solvers\n") 
+//#define FIVE_T_STEPS
+//#define DIFF_ANALIT_RIEMANN
+//#define BOOST
+//#define L1_NORM
+//#define ENTROPY_CHECK
+//#define SW_POINTS_PRINT
+//#define CFL_SWITCH
+//#define DIFF_ANALYT
+//#define BOUND_COND
+//#define DEBUG
+
+
 #define NUM_ITER 8
 
 #define GRID 3
@@ -51,10 +64,10 @@
 #define N_smooth 40
 #define N_bound 50
 
-#define LOOPS 6
+#define LOOPS 6         // the number of loops under the time calculations
 
-#define EPS		1.0e-6	// точность решения нелинейного уравнения
-#define MAX_ITER	20	// количество итераций для решения нелинейного уравнения
+#define EPS		1.0e-6	// the threshold for the solving nonlinear solution
+#define MAX_ITER	20	// the number of iteration to find nonlinear solution
 
 #define PROBLEM		2
 /*
@@ -64,21 +77,21 @@
 3 - periodic continious
 4 - shock tube with 2 shock waves
 5 - two shock tube (распад разрыва) в x=4 и x=6
-6 - волна разрежения x=6 догоняет ударную волну в x=7; x=20
-7 - две волны разрежения в разные стороны
-8 - одна ударная догоняет другую; расчет количества точек на волнах; strong sw
-9 - распад разрыва; тест Сода
-10 - эксперименты с гиперболическим синусом
-11 - ударная волна встречает область разрежения
+6 - rarifaction wave in x=6 comes to shockwave and intersects it in x=7;
+7 - two rarefaction waves propagates in different directions
+8 - the same as problem 6 + count of points on the waves; strong sw
+9 - test Sod
+10 - some experiments
+11 - shock wave intersect with rarefaction domain
 12 - test Toro 1
 13 - test Toro 2
 14 - test Toro 3
 15 - test Toro 4
 16 - test Toro 5
 17 - shock tube [0:10], x = 5 - discontinuity
-18 - shock wave with bound conditions
-19 - shock wave with U=u(t)
-20 - shock wave intersect another shock wave. Bound cond
+18 - shock wave with boundary condition in x = 0
+19 - shock wave with boundary condition U=u(t)
+20 - shock wave intersect another shock wave. Bound condition
 */
 
 /*************************************/
@@ -91,8 +104,10 @@
 #define T2 0.5
 #endif
 
-//#define EXACT_DISC
 
+/* Switch between nonlinear and linear cases */
+
+//#define EXACT_DISC
 #ifdef EXACT_DISC
 #define CROSS_POINT time_max_array[PROBLEM]
 #define TYPE 'E'
@@ -134,13 +149,6 @@
 
 #define RUNGE_KUTTA	0	/*	1 - Runge-Kutta method
 0 - Classic method
-*/
-
-/*		* Timers *
-0.5  - shock wave
-0.5  - rarify wave
-0.25 - shock tube
-0.25 - periodic continious
 */
 
 /***************************************/
@@ -225,8 +233,6 @@
 #define LENGTH 1.0
 #endif
 
-#define NUM_MESH	4			// number of mesh
-
 extern char prop[];
 extern char dip[];
 extern double time_max_array[];
@@ -237,16 +243,13 @@ extern float percents[NUM_ITER];
 extern int nmesh[];
 extern int nprnt[];
 
-extern double g1, g2, g3, g4, g5, g6, g7, g8;
+extern const double g1, g2, g3, g4, g5, g6, g7, g8;
 
 extern float left_SW[];
 extern float right_SW[];
 
 extern float left_19[];
 extern float right_19[];
-
-//float left_7[6] = { 0.3f, -1.0f, 0.2f, 1.1f, 0.0f, 0.0f };
-//float right_7[6] = { 1.0f, 1.0f, 1.0f, 1.3f, 0.25f, 0.001f };
 
 extern float left_7[];
 extern float right_7[];

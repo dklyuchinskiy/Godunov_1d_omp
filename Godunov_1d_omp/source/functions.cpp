@@ -1,6 +1,13 @@
 #include "definitions.h"
 #include "support.h"
 
+/****************************************
+Source file contains linear and
+nonlinear solvers of the Riemann problem
+and additional functionalities for
+processing results of the computations
+****************************************/
+
 /* SIMD linear solver */
 void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, double** LOOP_TIME, int last)
 {
@@ -1176,11 +1183,8 @@ void rw_diff_num_analit(int numb, int numcells, double *R, double *U, double *P)
 	check1 = 0;
 	check2 = 0;
 
-	int *i_helper;
-	i_helper = new int[10];
-
-	double *x_helper;
-	x_helper = new double[10];
+	int *i_helper = new int[10];
+	double *x_helper = new double[10];
 
 	double xl_num, xr_num;
 

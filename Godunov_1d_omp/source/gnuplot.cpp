@@ -1,6 +1,12 @@
 #include "definitions.h"
 #include "support.h"
 
+/****************************************
+Source file contains functions responsible
+for printing the results of output
+using GNUPLOT application.
+****************************************/
+
 void gnuplot_n_smooth(int numb)
 {
 	FILE* plot;
@@ -878,10 +884,9 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 	}
 }
 
-void gnuplot_last_step(int numcells, double dx, double D_analit, double *R, double *U, double *P)
+void output_last_step(int numcells, double dx, double D_analit, double *R, double *U, double *P)
 {
-	double us, cs, ps, ds, ss;
-	double x;
+	double us, cs, ps, ds, ss, x;
 	char FileName[255];
 	FILE *fout;
 #ifndef RP
@@ -892,12 +897,7 @@ void gnuplot_last_step(int numcells, double dx, double D_analit, double *R, doub
 	fout = fopen(FileName, "w");
 #endif
 
-
-#ifdef FIRST
-	for (int i = start_print; i < numcells; i += jump_print)  // вывод всегда по 100 точек ( с первой итерации которые )
-#else
-	for (int i = 0; i < numcells; i++)  // вывод всегда по 100 точек ( с первой итерации которые )
-#endif
+	for (int i = 0; i < numcells; i++)
 	{
 		x = i*dx + 0.5*dx;
 #ifdef NC

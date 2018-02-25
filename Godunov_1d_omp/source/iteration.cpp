@@ -1,6 +1,24 @@
 #include "definitions.h"
 #include "support.h"
 
+
+/***********************************************************************
+This function performs calculation in domain [0, LENGTH] x [0, max_time]
+using Godunov scheme of the first order based on linear of nonlinear 
+solvers of Riemann problem. 
+
+It is threaded OpenMP implementation. 
+Please, compile the file with -openmp clue to run parallel code.
+
+-- Parameter numb corresponds to a choosen grid step for calculation:
+int nmesh[9] = { 100, 300, 900, 2700, 8100, 24300, 32768, 65536, 656100 };
+int	numb:          0    1    2    3     4     5      6      7       8
+
+-- Parameter F_ro is used for calculation of an accuracy of the solution
+-- Parameter ITER_TIME is an array which contain information
+about time of each running thread on the each loop of the algorithm
+***********************************************************************/
+
 void iteration(int numb, double* F_ro, double* ITER_TIME)
 {
 	double *R,				// density
@@ -9,32 +27,38 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		*RU,				// moment of impulse
 		*RE,				// total energy
 		*S,					// entropy
-		*S_diff,
-		*S_prev;  
+		*S_diff,            // entropy difference between current and previous step
+		*S_prev;			// entropy on the previous time step
 
 	double *FR,				// density flux
 		*FRU,				// moment flux
 		*FRE,				// energy flux
 		*UFLUX;				// velocity flux
 
-	double *uss, *pss, *dss;										// boundaries
+	double *uss, *pss, *dss;										// gas values on the boundaries
 	double *exact_R, *exact_U, *exact_P, *exact_RE, *exact_S;		// exact values
 	double *diff_R, *diff_U, *diff_P, *diff_RE, *diff_S;			// diff of analyt and numerical functions
 	double *diff;													// for this array the memory is allocated inside function 
 	double *x_init, *x_n, *x_n1;									// coordinates
 
 	int numcells, start_print, jump_print, left_index, right_index;
-	int iter = 0, count = 0, last = 0;
+	int iter = 0, count = 0;
+	bool last = false;
 
 	double timer, time_max, tau, dx, dtdx, len, x, x_NC, wtime, CFL;
 	double ds = 0, us = 0, ps = 0, es = 0, es_diff = 0, cs = 0;
 	double u1 = 0, u2 = 0, u3 = 0, u_loc = 0, u_max = 0;
 	double D_analit = 0;
 	double delta_ro, delta_u, delta_p;
+	double start_t = 0, end_t = 0;
+	double loop_time = 0, bound_time = 0, cfl_time = 0;
+
 
 	char FileName[255], FileName2[255];
 	double sum_m[4][4] = { 0 };
+	FILE *file;
 
+	/* Read omp threads from the environment */
 	int OMP_CORES = omp_get_max_threads();
 	
 	double loop_full[LOOPS] = { 0 };
@@ -42,21 +66,10 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	for (int i = 0; i < LOOPS; i++)
 		LOOP_TIME[i] = new double[OMP_CORES];
 
-	FILE *file;
-
 	/* Set number of cells */
-	numcells = nmesh[numb];	//	N = 100 * 3^K = 100 * 3^(NUM_MESH)
-	start_print = nprnt[numb];	/*	(3^K-1)/2
-								K = 0	-> 0
-								K = 1	-> 1
-								K = 2	-> 4
-								K = 3	-> 13
-								K = 4	-> 40
-								K = 5	-> 121
-								*/
-	int numcells3 = numcells / 3;
-	jump_print = numcells / 100;		//	N / 100
+	numcells = nmesh[numb];	//	N = 100 * 3^K
 
+	/* Chunk for OMP threading */
 	int omp_chunk = numcells / OMP_CORES;
 
 	/* Boundary */
@@ -132,11 +145,6 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #endif
 	
 	printf("\nIteration %d\n", numb + 1);
-
-	double start_t, end_t;
-	double loop_time = 0;
-	double bound_time = 0;
-	double cfl_time = 0;
 
 	start_t = omp_get_wtime();
 
@@ -237,7 +245,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		if (timer + tau > time_max)
 		{
 			tau = time_max - timer; // if the last time's step is bigger than distance to "time_max"
-			last = 1;
+			last = true;			// set last time step
 		}
 		if (last) printf("CFL loop: %lf\n", cfl_time);
 		dtdx = tau / dx;
@@ -249,20 +257,18 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		if (last) printf("Boundary_conditions loop: %lf\n", bound_time);
 
 		/* Nonlinear or linear Godunov scheme */
+		if (last) printf("Loop 2\n");
+		loop_time = omp_get_wtime();
 		if (timer < CROSS_POINT)
 		{
 			nonlinear_solver(numcells, R, U, P, dss, uss, pss);
 		}
 		else
 		{
-			if (last) printf("Loop 2\n");
-			loop_time = omp_get_wtime();
-		
 			linear_solver(numcells, R, U, P, dss, uss, pss, LOOP_TIME, last);
-
-			loop_full[2] += omp_get_wtime() - loop_time;
-			if (last) printf("Full time loop: %lf\n", loop_full[2]);
 		}
+		loop_full[2] += omp_get_wtime() - loop_time;
+		if (last) printf("Full time loop: %lf\n", loop_full[2]);
 
 		/* Computation of flux variables */
 		if (last) printf("Loop 3\n");
@@ -291,6 +297,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		{
 			x_n1[i] = x_n[i] + tau * UFLUX[i];
 		}
+
 		/* Computation of conservations laws (in conservative variables!) */
 		if (last) printf("Loop 4\n");
 		loop_time = omp_get_wtime();
@@ -353,13 +360,15 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		outline_integral_riemann(numcells, timer, tau, (double)T1, (double)T2, (double)X1, (double)X2, x_init, diff_R, diff_U, diff_P, diff_RE, diff_S, sum_m); //difference num and exact
 #endif
 #endif
-		/* Output to file during computations */
-#if defined(OUTPUT_N_SMOOTH) && defined(PRINT)
+		/* Output to several files during computations */
+#ifdef OUTPUT_N_SMOOTH
 #if (PROBLEM == 18)
 		file_n_smooth_steps(numcells, timer, tau, x_n1, R, U, P, RE, S, S_diff, UFLUX);
 #else
 		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, UFLUX);
 #endif
+#else
+		output_last_step(numcells, dx, D_analit, R, U, P);
 #endif
 		/* Euler coordinates */
 #pragma omp parallel for simd schedule(simd:static)
@@ -396,7 +405,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	/* Checking of accuracy of the solution */
 	int ldf = 4;
 
-	// Matrix [4 x numb]. Let's use column major.
+	/* Matrix [4 x numb]. Let's use column major. */
 #ifdef INTEGRAL
 	F_ro[1 + ldf * numb] = sum_m[0][1] - sum_m[1][1] + sum_m[2][1] - sum_m[3][1];
 	printf("sum_l_I: %30.28lf\nsum_t_I: %30.28lf\nsum_r_I: %30.28lf\nsum_b_I: %30.28lf\n", sum_m[3][1], sum_m[0][1], sum_m[2][1], sum_m[1][1]);
@@ -430,16 +439,12 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	rw_diff_num_analit(numb, numcells, R, U, P);
 #endif
 #endif
-
-	/* The final output */
-#ifdef PRINT
-#ifdef OUTPUT_N_SMOOTH
+	
+	/* Print output files using GNUPLOT */
+#if defined(PRINT) && defined(OUTPUT_N_SMOOTH)
 	gnuplot_n_smooth2(numcells, sw1_num, sw2_num, sw3_num);
-#else
-	gnuplot_last_step(numcells, dx, D_analit, R, U, P);
 #if (PROBLEM==2 || PROBLEM==9)
 //	gnuplot_analitical_riemann2(numcells, w_num_r, w_num_u, w_num_p);
-#endif
 #endif
 #endif
 
