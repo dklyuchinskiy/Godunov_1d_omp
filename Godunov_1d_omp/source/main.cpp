@@ -20,10 +20,11 @@ int main()
 	run[0] = 0;
 	run[1] = 0;
 	run[2] = 0;
-	run[3] = 1;
+	run[3] = 0;
 	run[4] = 0;
 	run[5] = 0;
-	run[6] = 1;
+	run[6] = 0;
+	run[7] = 1;
 #endif
 
 #if 1
