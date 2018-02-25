@@ -7,7 +7,7 @@ double guessp(double dl, double ul, double pl, double cl, double dr, double ur, 
 void starpu(double &p, double &u, double dl, double ul, double pl, double cl, double dr, double ur, double pr, double cr);
 
 void nonlinear_solver(int numcells, double *R, double *U, double *P, double *dss, double *uss, double *pss);
-void linear_solver(int numcells, double *R, double *U, double *P, double *dss, double *uss, double *pss, int last);
+void linear_solver(int numcells, double *R, double *U, double *P, double *dss, double *uss, double *pss, double** LOOP_TIME, int last);
 void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double tau, double *t, double *UFLUX);
 void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P);
 void mem_alloc(int numcells, double **arr, int align);
@@ -23,7 +23,7 @@ double sw_speed(double ro1, double ro2, double u1, double u2);
 double* finite_difference(int numb, double *mas);
 double RW_prop(int digit, double x, double numb, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r);
 
-void iteration(int numb, double F_ro[], double ITER_TIME[]);
+void iteration(int numb, double* F_ro, double* ITER_TIME);
 void linear(double dl, double ul, double pl, double dr, double ur, double pr, double &d, double &u, double &p);
 void linear_check(double dl, double ul, double pl, double dr, double ur, double pr, int &left, int &middle, int &right, int numb);
 void runge(double *massiv, int ldf, int numb);

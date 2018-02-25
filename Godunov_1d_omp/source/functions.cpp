@@ -2,18 +2,18 @@
 #include "support.h"
 
 /* SIMD linear solver */
-void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, int last)
+void linear_solver(int numcells, double* R, double* U, double* P, double* dss, double* uss, double* pss, double** LOOP_TIME, int last)
 {
 	double wtime = 0;
 	double *C = new double[numcells];
 	double *RC = new double[numcells];
 	double *H = new double[numcells];
 
-#pragma omp parallel private(wtime) num_threads(OMP_CORES)
+#pragma omp parallel private(wtime)
 	{
 		wtime = omp_get_wtime();
 
-#pragma omp for simd schedule(dynamic,64) // schedule(simd:static) 
+#pragma omp for simd schedule(simd:static) // schedule(dynamic,64) 
 		for (int i = 1; i < numcells; i++)
 		{
 
@@ -1583,6 +1583,8 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 		check1 = 0;
 		check2 = 0;
 	}
+
+	int OMP_CORES = omp_get_max_threads();
 
 	double dx = LENGTH / double(numcells);
 	int omp_chuck = numcells / OMP_CORES;

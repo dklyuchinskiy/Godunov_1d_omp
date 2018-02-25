@@ -10,8 +10,8 @@ int main()
 	int run[NUM_ITER];
 
 	// M, I, E, S
-	double F_ro[4*NUM_ITER] = { 0 };
-	double ITER_TIME[NUM_ITER] = { 0 };
+	double* F_ro = new double [4*NUM_ITER];
+	double* ITER_TIME = new double [NUM_ITER];
 
 #ifdef INTEGRAL
 	for (int i = 0; i < NUM_ITER; i++)
@@ -20,10 +20,10 @@ int main()
 	run[0] = 0;
 	run[1] = 0;
 	run[2] = 0;
-	run[3] = 0;
+	run[3] = 1;
 	run[4] = 0;
-	run[5] = 1;
-	run[6] = 0;
+	run[5] = 0;
+	run[6] = 1;
 #endif
 
 #if 1

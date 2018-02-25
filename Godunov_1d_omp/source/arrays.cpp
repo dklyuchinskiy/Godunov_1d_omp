@@ -13,7 +13,6 @@ g7 = (GAMMA - 1.0) / 2.0,
 g8 = GAMMA - 1.0;
 
 char prop[6] = { 'R', 'U', 'P', 'C', 'S', 'D' };
-double LOOP_TIME[LOOPS][OMP_CORES] = { 0 };
 
 #ifdef SW_POINTS_PRINT
 double time_max_array[21] = { 0.5, 0.5, 0.5, 1.00, 0.5, 4.0, 0.6, 8.0, 0.4, 0.2, 0.3, 0.3, 0.2, 0.15, 0.012, 0.035, 0.012, 4.0, 0.5. 8, 0.5 };

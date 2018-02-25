@@ -51,7 +51,6 @@
 #define N_smooth 40
 #define N_bound 50
 
-#define OMP_CORES 4
 #define LOOPS 6
 
 #define EPS		1.0e-6	// точность решения нелинейного уравнения
@@ -71,11 +70,11 @@
 9 - распад разрыва; тест Сода
 10 - эксперименты с гиперболическим синусом
 11 - ударная волна встречает область разрежения
-12 - тест Торо 1
-13 - тест Торо 2
-14 - тест Торо 3
-15 - тест Торо 4
-16 - тест Торо 5
+12 - test Toro 1
+13 - test Toro 2
+14 - test Toro 3
+15 - test Toro 4
+16 - test Toro 5
 17 - shock tube [0:10], x = 5 - discontinuity
 18 - shock wave with bound conditions
 19 - shock wave with U=u(t)
@@ -232,7 +231,6 @@ extern char prop[];
 extern char dip[];
 extern double time_max_array[];
 extern float percents[NUM_ITER];
-extern double LOOP_TIME[LOOPS][OMP_CORES];
 
 // arrays.cpp
 

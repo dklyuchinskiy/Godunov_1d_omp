@@ -1,7 +1,7 @@
 #include "definitions.h"
 #include "support.h"
 
-void iteration(int numb, double F_ro[], double ITER_TIME[])
+void iteration(int numb, double* F_ro, double* ITER_TIME)
 {
 	double *R,				// density
 		*P,					// pressure
@@ -35,9 +35,13 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 
 	char FileName[255], FileName2[255];
 	double sum_m[4][4] = { 0 };
+
+	int OMP_CORES = omp_get_max_threads();
 	
 	double loop_full[LOOPS] = { 0 };
-	double LOOP_TIME[LOOPS][OMP_CORES] = { 0 };
+	double** LOOP_TIME = new double*[LOOPS];
+	for (int i = 0; i < LOOPS; i++)
+		LOOP_TIME[i] = new double[OMP_CORES];
 
 	FILE *file;
 
@@ -250,7 +254,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 			if (last) printf("Loop 2\n");
 			loop_time = omp_get_wtime();
 		
-			linear_solver(numcells, R, U, P, dss, uss, pss, last);
+			linear_solver(numcells, R, U, P, dss, uss, pss, LOOP_TIME, last);
 
 			loop_full[2] += omp_get_wtime() - loop_time;
 			if (last) printf("Full time loop: %lf\n", loop_full[2]);
@@ -282,7 +286,6 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 		{
 			x_n1[i] = x_n[i] + tau * UFLUX[i];
 		}
-
 		/* Computation of conservations laws (in conservative variables!) */
 		if (last) printf("Loop 4\n");
 		loop_time = omp_get_wtime();
@@ -292,6 +295,7 @@ void iteration(int numb, double F_ro[], double ITER_TIME[])
 #pragma omp for simd schedule(simd:static)
 			for (int i = 0; i < numcells; i++)
 			{
+	
 				R[i] = R[i] - dtdx * (FR[i + 1] - FR[i]);
 				RU[i] = RU[i] - dtdx * (FRU[i + 1] - FRU[i]);
 				RE[i] = RE[i] - dtdx * (FRE[i + 1] - FRE[i]);
