@@ -112,7 +112,7 @@ void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth],
 		for (int k = 0; k < N_smooth; k++)
 		{
 			
-			fprintf(plot, "\nreset\nclear\n\n###################################\nset term png font \"Times-Roman, 16\"\n\n##################################\n\n");
+			fprintf(plot, "###################################\nset term png font \"Times-Roman, 16\"\n\n##################################\n\n");
 
 			fprintf(plot, "set xrange[0.0:%f]\n\n", LENGTH); // забиваем в файл plot все виды функций давления, плотности и скорости в волне разрежения
 			fprintf(plot, "set xlabel \"x\"\n");

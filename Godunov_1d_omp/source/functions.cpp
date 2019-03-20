@@ -151,7 +151,7 @@ void nonlinear_solver(int numcells, double* R, double* U, double* P, double* dss
 	}
 }
 
-void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P)
+void boundary_conditions(int numcells, double timer, double *dss, double *uss, double *pss, double *R, double *U, double *P)
 {
 	double c0, s0, cn, sn;
 
@@ -186,12 +186,15 @@ void boundary_conditions(int numcells, double *dss, double *uss, double *pss, do
 	c0 = sqrt(GAMMA*P[0] / R[0]);
 
 	double l0_const = U[0] - P[0] / (R[0] * c0);
-	double rn_const = U[numcells] + P[numcells] / (R[numcells] * Cn);
+	//double rn_const = U[numcells] + P[numcells] / (R[numcells] * cn);
 
 	pss[0] = (uss[0] - l0_const)*(R[0] * c0);
 
 	s0 = log(P[0] / pow(R[0], GAMMA));
-	dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+	//dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+	dss[0] = R[0] + R[0] / c0 * (uss[0] - U[0]);
+
+	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
 
 
 #elif (PROBLEM == 3)
@@ -798,12 +801,12 @@ double initial_velocity(double x)
 }
 
 void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer,
-	double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *UFLUX)
+	double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *FRS_DIFF)
 {
 	FILE* fout, *fout_NC;
 	char FileName[255], FileName2[255];
 	double dx = LENGTH / double(numcells);
-	double ps, us, ds, cs, es, es_d;
+	double ps, us, ds, cs, es, es_d, frs_d;
 	double D_analit = 1.371913;
 
 	int proverka[N_smooth] = { 0 };
@@ -839,9 +842,10 @@ void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer
 				cs = sqrt(GAMMA*P[i] / R[i]);
 				es = S[i];
 				es_d = S_diff[i];
+				frs_d = FRS_DIFF[i];
 
 #ifndef NC
-				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, es_d);
+				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, frs_d, es_d);
 #else
 				fprintf(fout_NC, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x, ds, us, ps, cs, es, es_d);
 #endif

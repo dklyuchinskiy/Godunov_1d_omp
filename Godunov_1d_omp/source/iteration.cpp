@@ -33,6 +33,9 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	double *FR,				// density flux
 		*FRU,				// moment flux
 		*FRE,				// energy flux
+		*FRS,				// entropy flux
+		*FRS_PREV,			// entropy2 flux
+		*FRS_DIFF,			// entropy3 flux
 		*UFLUX;				// velocity flux
 
 	double *uss, *pss, *dss;										// gas values on the boundaries
@@ -64,7 +67,11 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	double loop_full[LOOPS] = { 0 };
 	double** LOOP_TIME = new double*[LOOPS];
 	for (int i = 0; i < LOOPS; i++)
+	{
 		LOOP_TIME[i] = new double[OMP_CORES];
+		for (int j = 0; j < OMP_CORES; j++)
+			LOOP_TIME[i][j] = 0;
+	}
 
 	/* Set number of cells */
 	numcells = nmesh[numb];	//	N = 100 * 3^K
@@ -122,6 +129,9 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	mem_alloc(numcells + 1, &FR, 32);
 	mem_alloc(numcells + 1, &FRU, 32);
 	mem_alloc(numcells + 1, &FRE, 32);
+	mem_alloc(numcells + 1, &FRS, 32);
+	mem_alloc(numcells + 1, &FRS_PREV, 32);
+	mem_alloc(numcells + 1, &FRS_DIFF, 32);
 	mem_alloc(numcells + 1, &UFLUX, 32);
 	mem_alloc(numcells + 1, &dss, 32);
 	mem_alloc(numcells + 1, &uss, 32);
@@ -196,7 +206,6 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	inf_before_start(numcells, R, U, P, D_analit);
 
 	/***** Computational loop *****/
-
 #ifdef FLUX_COUNT
 	FILE* array_flux[N_bound];
 	for (int i = 0; i < N_bound; i++)
@@ -252,7 +261,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 
 		/* Boundary conditions */
 		loop_time = omp_get_wtime();
-		boundary_conditions(numcells, dss, uss, pss, R, U, P);
+		boundary_conditions(numcells, timer, dss, uss, pss, R, U, P);
 		bound_time += omp_get_wtime() - loop_time;
 		if (last) printf("Boundary_conditions loop: %lf\n", bound_time);
 
@@ -290,6 +299,18 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		}
 		loop_full[3] += omp_get_wtime() - loop_time;
 		if (last) printf("Full time loop: %lf\n", loop_full[3]);
+
+		/* Flux entropy check */
+#pragma omp parallel num_threads(OMP_CORES)
+		{
+#pragma omp for simd schedule(simd:static) 
+			for (int i = 0; i <= numcells; i++)
+			{
+				FRS[i] = dss[i] * log(pss[i] / pow(dss[i], GAMMA));
+				if (iter > 0) FRS_DIFF[i] = FRS[i] - FRS_PREV[i];
+				FRS_PREV[i] = FRS[i];
+			}
+		}
 
 		/* Euler coordinates */
 #pragma omp parallel for simd schedule(simd:static)
@@ -330,6 +351,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 				U[i] = RU[i] / R[i]; 
 				P[i] = (GAMMA - 1.0) * (RE[i] - 0.5 * RU[i] * U[i]);
 				S[i] = log(P[i] / pow(R[i], GAMMA));
+
 				S_diff[i] = S[i] - S_prev[i];
 				S_prev[i] = S[i];
 			}
@@ -365,7 +387,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #if (PROBLEM == 18)
 		file_n_smooth_steps(numcells, timer, tau, x_n1, R, U, P, RE, S, S_diff, UFLUX);
 #else
-		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, UFLUX);
+		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, FRS_DIFF);
 #endif
 #else
 		output_last_step(numcells, dx, D_analit, R, U, P);

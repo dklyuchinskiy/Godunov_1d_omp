@@ -32,20 +32,20 @@ int main()
 	for (int i = 0; i < NUM_ITER; i++)
 		run[i] = 1;
 #else
-	run[0] = 0;
-	run[1] = 0;
-	run[2] = 0;
-	run[3] = 0;
-	run[4] = 0;
-	run[5] = 1;
-	run[6] = 0;
+	run[0] = 1; //100
+	run[1] = 0; // 300
+	run[2] = 1; // 900
+	run[3] = 0; // 2700
+	run[4] = 0; // 8100
+	run[5] = 0;
+	run[6] = 0; // 72000
 	run[7] = 0;
 #endif
 
 #if 1
 
 	start = omp_get_wtime();
-	for (i = 0; i < NUM_ITER; i++) // Iterations   //there is dependence between iterations!!! its impossible to start new iteration before last ends
+	for (int i = 0; i < NUM_ITER; i++) // Iterations   //there is dependence between iterations!!! its impossible to start new iteration before last ends
 	{
 		if (run[i] == 1) iteration(i, F_ro, ITER_TIME);
 
@@ -65,7 +65,9 @@ int main()
 	time = 0.1500;
 	// P_4: timing 
 	time = 0.04;
-	// gnuplot_all_iter_one_time(run, 4, time);
+	//time = 0.3500; P0
+	time = 0.2550; // P2
+	gnuplot_all_iter_one_time(run, 4, time);
 
 	duration = omp_get_wtime() - start;
 

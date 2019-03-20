@@ -25,7 +25,7 @@ to enable the respective job.
 
 // 1) General preprocessor definition
 
-//#define PRINT printf("Printing with GNUPLOT is set up\n");
+#define PRINT printf("Printing with GNUPLOT is set up\n");
 #define OUTPUT_N_SMOOTH printf("Output to several files. One file = one layer")
 //#define INTEGRAL printf("Computation of accuracy via using counter integrals")
 
@@ -69,7 +69,7 @@ to enable the respective job.
 #define EPS		1.0e-6	// the threshold for the solving nonlinear solution
 #define MAX_ITER	20	// the number of iteration to find nonlinear solution
 
-#define PROBLEM		2
+#define PROBLEM		0
 /*
 0 - shock wave
 1 - rarify wave
@@ -237,6 +237,8 @@ extern char prop[];
 extern char dip[];
 extern double time_max_array[];
 extern float percents[NUM_ITER];
+
+#define max(a,b) ((a) > (b)) ? (a) : (b)
 
 // arrays.cpp
 

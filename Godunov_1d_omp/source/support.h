@@ -13,7 +13,7 @@ void starpu(double &p, double &u, double dl, double ul, double pl, double cl, do
 void nonlinear_solver(int numcells, double *R, double *U, double *P, double *dss, double *uss, double *pss);
 void linear_solver(int numcells, double *R, double *U, double *P, double *dss, double *uss, double *pss, double** LOOP_TIME, int last);
 void flux_count(FILE* *array_flux, int iter, int numcells, double timer, double tau, double *t, double *UFLUX);
-void boundary_conditions(int numcells, double *dss, double *uss, double *pss, double *R, double *U, double *P);
+void boundary_conditions(int numcells, double timer, double *dss, double *uss, double *pss, double *R, double *U, double *P);
 void mem_alloc(int numcells, double **arr, int align);
 void mem_free(double **arr);
 
