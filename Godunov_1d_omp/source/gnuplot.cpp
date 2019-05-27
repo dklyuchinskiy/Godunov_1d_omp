@@ -158,8 +158,13 @@ void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth],
 			{
 				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/small_%c_W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
 			}
-			else {
+			else 
+			{
+#ifndef ORDER2
 				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
+#else
+				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_W%03d_P%1d_%6.4lf_%c_ord2.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
+#endif
 			}
 #else
 			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/%c_%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, (char)TYPE, numcells, PROBLEM, (k + 1)*k_step, prop[i]);

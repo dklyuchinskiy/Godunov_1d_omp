@@ -32,9 +32,9 @@ int main()
 	for (int i = 0; i < NUM_ITER; i++)
 		run[i] = 1;
 #else
-	run[0] = 1; //100
+	run[0] = 1; // 100
 	run[1] = 0; // 300
-	run[2] = 1; // 900
+	run[2] = 0; // 900
 	run[3] = 0; // 2700
 	run[4] = 0; // 8100
 	run[5] = 0;

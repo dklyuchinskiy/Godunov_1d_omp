@@ -21,7 +21,9 @@ double initial_density(double x);
 double initial_pressure(double x);
 double initial_velocity(double x);
 
-double gyugonio(double p1, double ro1, double p2);
+double gyugonio_direct(double p1, double ro1, double p2/*за ударной волной*/);
+double gyugonio_inverse(double p1, double ro2, double p2/*за ударной волной*/);
+double velocity_before_sw(double ro1, double p1, double ro2 /*за ударной волной*/, double u2, double p2 /*за ударной волной*/);
 double sw_speed2(double ro1, double u1, double p1, double ro2, double p2);
 double sw_speed(double ro1, double ro2, double u1, double u2);
 double* finite_difference(int numb, double *mas);

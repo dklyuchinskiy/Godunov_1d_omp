@@ -38,6 +38,17 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		*FRS_DIFF,			// entropy3 flux
 		*UFLUX;				// velocity flux
 
+	double *R2,				// density
+		*P2,					// pressure
+		*U2,					// velocity
+		*RU2,				// moment of impulse
+		*RE2;				// total energy
+
+    double *FR2,				// density flux
+	       *FRU2,				// moment flux
+		   *FRE2,				// energy flux
+		   *UFLUX2;
+
 	double *uss, *pss, *dss;										// gas values on the boundaries
 	double *exact_R, *exact_U, *exact_P, *exact_RE, *exact_S;		// exact values
 	double *diff_R, *diff_U, *diff_P, *diff_RE, *diff_S;			// diff of analyt and numerical functions
@@ -106,6 +117,12 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	mem_alloc(numcells, &S_prev, 32);
 	mem_alloc(numcells, &S_diff, 32);
 
+	mem_alloc(numcells, &R2, 32);
+	mem_alloc(numcells, &P2, 32);
+	mem_alloc(numcells, &U2, 32);
+	mem_alloc(numcells, &RU2, 32);
+	mem_alloc(numcells, &RE2, 32);
+
 	mem_alloc(numcells, &x_n, 32);
 	mem_alloc(numcells, &x_n1, 32);
 	mem_alloc(numcells, &x_init, 32);
@@ -136,6 +153,11 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	mem_alloc(numcells + 1, &dss, 32);
 	mem_alloc(numcells + 1, &uss, 32);
 	mem_alloc(numcells + 1, &pss, 32);
+
+	mem_alloc(numcells + 1, &FR2, 32);
+	mem_alloc(numcells + 1, &FRU2, 32);
+	mem_alloc(numcells + 1, &FRE2, 32);
+	mem_alloc(numcells + 1, &UFLUX2, 32);
 
 	int w_num_p[N_smooth] = { 0 };
 	int w_num_r[N_smooth] = { 0 };
@@ -299,6 +321,48 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		}
 		loop_full[3] += omp_get_wtime() - loop_time;
 		if (last) printf("Full time loop: %lf\n", loop_full[3]);
+
+		/* Second order scheme */
+		/* ----------------------------------------------- */
+#ifdef ORDER2
+#pragma omp parallel for simd schedule(simd:static)
+		for (int i = 0; i < numcells; i++)
+		{
+			R2[i] = R[i] - dtdx * (FR[i + 1] - FR[i]);
+			RU2[i] = RU[i] - dtdx * (FRU[i + 1] - FRU[i]);
+			RE2[i] = RE[i] - dtdx * (FRE[i + 1] - FRE[i]);
+			U2[i] = RU2[i] / R2[i];
+			P2[i] = (GAMMA - 1.0) * (RE2[i] - 0.5 * RU2[i] * U2[i]);
+		}
+
+		if (timer < CROSS_POINT)
+		{
+			nonlinear_solver(numcells, R2, U2, P2, dss, uss, pss);
+		}
+		else
+		{
+			linear_solver(numcells, R2, U2, P2, dss, uss, pss, LOOP_TIME, last);
+		}
+
+#pragma omp parallel for simd schedule(simd:static) 
+		for (int i = 0; i <= numcells; i++)
+		{
+			UFLUX2[i] = uss[i];
+			FR2[i] = dss[i] * uss[i];
+			FRU2[i] = dss[i] * uss[i] * uss[i] + pss[i];
+			FRE2[i] = (pss[i] / (GAMMA - 1.0) + 0.5*dss[i] * uss[i] * uss[i])*uss[i] + pss[i] * uss[i];
+		}
+
+#pragma omp parallel for simd schedule(simd:static) 
+		for (int i = 0; i <= numcells; i++)
+		{
+			UFLUX[i] = (UFLUX[i] + UFLUX2[i]) / 2;
+			FR[i] = (FR[i] + FR2[i]) / 2;
+			FRU[i] = (FRU[i] + FRU2[i]) / 2;
+			FRE[i] = (FRE[i] + FRE2[i]) / 2;
+		}
+#endif
+		/*------------------------------------------------*/
 
 		/* Flux entropy check */
 #pragma omp parallel num_threads(OMP_CORES)
@@ -478,6 +542,12 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	mem_free(&RU);
 	mem_free(&RE);
 
+	mem_free(&R2);
+	mem_free(&P2);
+	mem_free(&U2);
+	mem_free(&RU2);
+	mem_free(&RE2);
+
 	mem_free(&FR);
 	mem_free(&FRU);
 	mem_free(&FRE);
@@ -485,6 +555,11 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	mem_free(&dss);
 	mem_free(&uss);
 	mem_free(&pss);
+
+	mem_free(&FR2);
+	mem_free(&FRU2);
+	mem_free(&FRE2);
+	mem_free(&UFLUX2);
 
 #if defined(DIFF_ANALIT_RIEMANN) && defined(L1_NORM)
 	mem_free(&exact_U);

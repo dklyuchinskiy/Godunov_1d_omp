@@ -56,6 +56,7 @@ to enable the respective job.
 //#define BOUND_COND
 //#define DEBUG
 
+#define ORDER2
 
 #define NUM_ITER 8
 
@@ -69,7 +70,7 @@ to enable the respective job.
 #define EPS		1.0e-6	// the threshold for the solving nonlinear solution
 #define MAX_ITER	20	// the number of iteration to find nonlinear solution
 
-#define PROBLEM		0
+#define PROBLEM		2
 /*
 0 - shock wave
 1 - rarify wave
@@ -79,10 +80,10 @@ to enable the respective job.
 5 - two shock tube (распад разрыва) в x=4 и x=6
 6 - rarifaction wave in x=6 comes to shockwave and intersects it in x=7;
 7 - two rarefaction waves propagates in different directions
-8 - the same as problem 6 + count of points on the waves; strong sw
+8 - two shock waves + count of points on the waves; strong sw
 9 - test Sod
 10 - some experiments
-11 - shock wave intersect with rarefaction domain
+11 - shock wave intersect with rarefaction domain -->   <---
 12 - test Toro 1
 13 - test Toro 2
 14 - test Toro 3
@@ -91,7 +92,7 @@ to enable the respective job.
 17 - shock tube [0:10], x = 5 - discontinuity
 18 - shock wave with boundary condition in x = 0
 19 - shock wave with boundary condition U=u(t)
-20 - shock wave intersect another shock wave. Bound condition
+20 - shock wave chase another shock wave. Bound condition -->   -->
 */
 
 /*************************************/
@@ -164,7 +165,7 @@ to enable the respective job.
 
 
 #define st_P2 1.4017
-#define st_R2 gyugonio(st_P3, st_R3, st_P2)
+#define st_R2 gyugonio_direct(st_P3, st_R3, st_P2)
 #define st_U2 ((sw_speed2(st_R3, st_U3, st_P3, st_R2, st_P2)*(1.0 - (st_R3)/(st_R2))) + ((st_R3)*(st_U3)/(st_R2)))
 
 #ifdef P4_ONE_WAVE
@@ -172,7 +173,7 @@ to enable the respective job.
 #else
 #define st_P1 3.288303 //5
 #endif 
-#define st_R1 gyugonio(st_P2, st_R2, st_P1)
+#define st_R1 gyugonio_direct(st_P2, st_R2, st_P1)
 #define st_U1 ((sw_speed2(st_R2, st_U2, st_P2, st_R1, st_P1)*(1.0 - (st_R2)/(st_R1))) + ((st_R2)*(st_U2)/(st_R1)))
 
 /**************************************************/
@@ -182,12 +183,31 @@ to enable the respective job.
 #define st_th_U2 0.0
 
 #define st_th_P1 3.5
-#define st_th_R1 gyugonio(st_th_P2, st_th_R2, st_th_P1)
+#define st_th_R1 gyugonio_direct(st_th_P2, st_th_R2, st_th_P1)
 #define st_th_U1 ((sw_speed2(st_th_R2, st_th_U2, st_th_P2, st_th_R1, st_th_P1)*(1.0 - (st_th_R2)/(st_th_R1))) + ((st_th_R2)*(st_th_U2)/(st_th_R1)))
+
+/***************************************************/
+
+// Problem 11
+// RW // --------- // SW // 
+
+#define rw_P3 1.401789770179879
+#define rw_R3 1.551608179649565
+#define rw_U3 -0.292868067614595
+
+#define rw_P2 2.0
+#define rw_R2 2.0
+#define rw_U2 0.0
+
+#define sw_P1 3.0 // from sky
+#define sw_R1 gyugonio_inverse(sw_P1, rw_R2, rw_P2)
+#define sw_U1 velocity_before_sw(sw_R1, sw_P1, rw_R2 /*за ударной волной*/, rw_U2, rw_P2 /*за ударной волной*/)
 
 /* Define point of discontinuity */
 #if (PROBLEM==0 || PROBLEM==1)
 #define DISC_POINT 0.1         // 0.3 - rarification wave test
+// test
+//#define DISC_POINT 0
 #elif (PROBLEM == 2 || PROBLEM == 9)
 #define DISC_POINT 0.5
 #elif (PROBLEM == 4)
@@ -203,7 +223,7 @@ to enable the respective job.
 #elif (PROBLEM == 10)
 #define DISC_POINT 0.2
 #elif (PROBLEM == 11)
-#define DISC_POINT 0.2
+#define DISC_POINT 0.0
 #elif (PROBLEM == 12)
 #define DISC_POINT 0.3
 #elif (PROBLEM == 13)

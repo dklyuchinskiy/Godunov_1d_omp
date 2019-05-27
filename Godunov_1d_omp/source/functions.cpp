@@ -194,7 +194,23 @@ void boundary_conditions(int numcells, double timer, double *dss, double *uss, d
 	//dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
 	dss[0] = R[0] + R[0] / c0 * (uss[0] - U[0]);
 
+#if 0
 	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
+#else
+	pss[numcells] = 0.5;
+	//	pss[numcells] = initial_pressure(LENGTH);
+
+	cn = sqrt(GAMMA*P[numcells - 1] / R[numcells - 1]);
+
+	double rn_const = U[numcells - 1] + P[numcells - 1] / (R[numcells - 1] * cn);
+
+	uss[numcells] = rn_const - pss[numcells] / (R[numcells - 1] * cn);
+
+	sn = log(P[numcells - 1] / pow(R[numcells - 1], GAMMA));
+
+	//R3 = dl - dl / cl * (bigU - ul);
+	dss[numcells] = R[numcells - 1] + R[numcells - 1] / cn * (uss[numcells] - U[numcells - 1]);
+#endif
 
 
 #elif (PROBLEM == 3)
@@ -203,6 +219,61 @@ void boundary_conditions(int numcells, double timer, double *dss, double *uss, d
 #else
 	linear(R[0], U[0], P[0], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
 	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
+#endif
+
+
+	/// TEST
+#if (PROBLEM == 1)
+	pss[numcells] = initial_pressure(1.0);
+	//	pss[numcells] = initial_pressure(LENGTH);
+
+	cn = sqrt(GAMMA*P[numcells - 1] / R[numcells - 1]);
+
+	double rn_const = U[numcells - 1] + P[numcells - 1] / (R[numcells - 1] * cn);
+
+	uss[numcells] = rn_const - pss[numcells] / (R[numcells - 1] * cn);
+
+	sn = log(P[numcells - 1] / pow(R[numcells - 1], GAMMA));
+
+	//dss[0] = pow(pss[0] / s0, 1.0 / GAMMA);
+
+	//R3 = dl - dl / cl * (bigU - ul);
+	dss[numcells] = R[numcells - 1] + R[numcells - 1] / cn * (uss[numcells] - U[numcells - 1]);
+
+	linear(R[0], U[0], P[0], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
+#elif (PROBLEM == 11)
+
+	// RIGHT
+
+	pss[numcells] = initial_pressure(1.0);
+	//	pss[numcells] = initial_pressure(LENGTH);
+
+	cn = sqrt(GAMMA*P[numcells - 1] / R[numcells - 1]);
+
+	double rn_const = U[numcells - 1] + P[numcells - 1] / (R[numcells - 1] * cn);
+
+	uss[numcells] = rn_const - pss[numcells] / (R[numcells - 1] * cn);
+
+	sn = log(P[numcells - 1] / pow(R[numcells - 1], GAMMA));
+
+	//R3 = dl - dl / cl * (bigU - ul);
+	dss[numcells] = R[numcells - 1] + R[numcells - 1] / cn * (uss[numcells] - U[numcells - 1]);
+
+	// LEFT
+
+	pss[0] = initial_pressure(0.0);
+	//	pss[numcells] = initial_pressure(LENGTH);
+
+	c0 = sqrt(GAMMA*P[0] / R[0]);
+
+	double r0_const = U[0] - P[0] / (R[0] * c0);
+
+	uss[0] = r0_const + pss[0] / (R[0] * c0);
+
+	s0 = log(P[0] / pow(R[0], GAMMA));
+
+	//R3 = dl - dl / cl * (bigU - ul);
+	dss[0] = R[0] + R[0] / c0 * (uss[0] - U[0]);
 #endif
 }
 
@@ -572,11 +643,19 @@ void linear_check(double dl, double ul, double pl, double dr, double ur, double 
 
 }
 
-double gyugonio(double p1, double ro1, double p2/*за ударной волной*/)
+double gyugonio_direct(double p1, double ro1, double p2/*за ударной волной*/)
 {
+	// ro2 - after shock wave
 	return ro1*((GAMMA + 1.0)*p2 + (GAMMA - 1.0)*p1) / ((GAMMA - 1.0)*p2 + (GAMMA + 1.0)*p1);
 	//  R2 = ro2*((GAMMA + 1.0)*P + (GAMMA - 1.0)*p2) / ((GAMMA - 1.0)*P + (GAMMA + 1.0)*p2);
 }
+
+double gyugonio_inverse(double p1, double ro2, double p2/*за ударной волной*/)
+{
+	// r01 - before shock wave
+	return ro2 * ((GAMMA - 1.0)*p2 + (GAMMA + 1.0)*p1) / ((GAMMA + 1.0)*p2 + (GAMMA - 1.0)*p1);
+}
+
 
 double sw_speed(double ro1, double ro2, double u1, double u2)
 {
@@ -587,6 +666,11 @@ double sw_speed(double ro1, double ro2, double u1, double u2)
 double sw_speed2(double ro1, double u1, double p1, double ro2 /*за ударной волной*/, double p2 /*за ударной волной*/)
 {
 	return u1 + sqrt(ro2*(p2 - p1) / ro1 / (ro2 - ro1));
+}
+
+double velocity_before_sw(double ro1, double p1, double ro2 /*за ударной волной*/, double u2, double p2 /*за ударной волной*/)
+{
+	return u2 - (1.0 - ro1 / ro2) * sqrt(ro2*(p2 - p1) / ro1 / (ro2 - ro1));
 }
 
 double law(double t)
@@ -603,7 +687,7 @@ double initial_density(double x)
 	case 18:
 	case 0:	if (x <= DISC_POINT) return 1.271413930046081;
 			else return 1.0;
-	case 1:	if (x <= DISC_POINT) return 1.551608179649565;
+	case 1:	if (x >= LENGTH - DISC_POINT) return 1.551608179649565;
 			else return 2.0;
 	/*case 1:	if (x <= DISC_POINT)
 		return 1.0;
@@ -637,9 +721,9 @@ double initial_density(double x)
 			 else return st_th_R2;
 			 //case 10: return -0.55*tanh(2 * PI*(x - 0.5)) + 1.546; // weak
 			 //case 10: return -0.9*tanh(2 * PI*(x - 0.5)) + 1.9; // strong
-	case 11: if (x <= 0.1) return st_R2;
-			 else if (x <= 0.6) return st_R3;
-			 else 0.2;
+	case 11: if (x <= DISC_POINT) return sw_R1;
+			 else if (x >= LENGTH - DISC_POINT) return rw_R3;
+			 else return rw_R2;
 		// TORO tests
 		// 1
 	case 12: if (x <= DISC_POINT) return 1.0;
@@ -670,7 +754,7 @@ double initial_pressure(double x)
 	case 18:
 	case 0:	if (x <= DISC_POINT) return 1.401789770179879;
 			else return 1.0;
-	case 1:	if (x <= DISC_POINT) return 1.401789770179879;
+	case 1:	if (x >= LENGTH - DISC_POINT) return 1.401789770179879;
 			else return 2.0;
 	/*case 1:	if (x <= DISC_POINT)
 		return 1.0;
@@ -705,8 +789,9 @@ double initial_pressure(double x)
 
 	case 10: if (x <= DISC_POINT) return st_th_P1;
 			 else return st_th_P2;
-	case 11: if (x <= 0.1) return st_P2;
-			 else return st_P3;
+	case 11: if (x <= DISC_POINT) return sw_P1;
+			 else if (x >= LENGTH - DISC_POINT) return rw_P3;
+			 else return rw_P2;
 		// TORO tests
 		// 1
 	case 12: if (x <= DISC_POINT) return 1.0;
@@ -740,7 +825,7 @@ double initial_velocity(double x)
 	case 0:	if (x <= DISC_POINT) return 0.292868067614595;
 			else return 0.0;
 
-	case 1:	if (x <= DISC_POINT) return -0.292868067614595;
+	case 1:	if (x >= LENGTH - DISC_POINT) return -0.292868067614595;
 			else  return 0.0;
 
 	/*case 1:	if (x <= DISC_POINT)
@@ -776,8 +861,9 @@ double initial_velocity(double x)
 			 //	case 10: return -0.51*tanh(2 * PI*(x - 0.5)) + 0.51; // weak
 
 			 //case 10: return -0.8*tanh(2 * PI*(x - 0.5)) + 0.8; // strong
-	case 11: if (x <= 0.1) return st_U2;
-			 else return st_U3;
+	case 11: if (x <= DISC_POINT) return sw_U1;
+			 else if (x >= LENGTH - DISC_POINT) return rw_U3;
+			 else return rw_U2;
 		// TORO tests
 		// 1
 	case 12: if (x <= DISC_POINT) return 0.75;// +0.2;// +0.4533;
@@ -845,7 +931,7 @@ void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer
 				frs_d = FRS_DIFF[i];
 
 #ifndef NC
-				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, frs_d, es_d);
+				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, es_d, frs_d);
 #else
 				fprintf(fout_NC, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x, ds, us, ps, cs, es, es_d);
 #endif
@@ -1708,11 +1794,11 @@ void inf_before_start(int numcells, double *R, double *U, double *P, double &D_a
 #elif (PROBLEM == 8 || PROBLEM == 4)
 	/*	printf("-----------OLD WAY----------\n");
 	printf("\n--------first sw-------\n");
-	printf("dens: %lf\n", gyugonio(st_P3, st_R3, st_P2));
+	printf("dens: %lf\n", gyugonio_direct(st_P3, st_R3, st_P2));
 	printf("sw speed: %lf\n", sw_speed(st_R3, st_R2, st_U3, st_U2));
 	printf("u after sw: %lf\n", st_U2);
 	printf("\n---------second sw---------\n");
-	printf("dens: %lf\n", gyugonio(st_P2, st_R2, st_P1));
+	printf("dens: %lf\n", gyugonio_direct(st_P2, st_R2, st_P1));
 	printf("sw speed: %lf\n", sw_speed(st_R2, st_R1, st_U2, st_U1));
 
 
@@ -1723,8 +1809,8 @@ void inf_before_start(int numcells, double *R, double *U, double *P, double &D_a
 
 	printf("---------------NEW WAY-----------\n");
 	printf("\n--------first sw-------\n");
-	//printf("dens after sw: %lf\n", gyugonio(st_P3, st_R3, st_P2));
-	double D_sw1 = sw_speed2(st_R3, st_U3, st_P3, gyugonio(st_P3, st_R3, st_P2), st_P2);
+	//printf("dens after sw: %lf\n", gyugonio_direct(st_P3, st_R3, st_P2));
+	double D_sw1 = sw_speed2(st_R3, st_U3, st_P3, gyugonio_direct(st_P3, st_R3, st_P2), st_P2);
 	printf("sw speed1 without u3: %lf\n", D_sw1);
 	printf("rup after sw1: %lf, %lf, %lf\n", st_R2, st_U2, st_P2);
 	system("pause");
