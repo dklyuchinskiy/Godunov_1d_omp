@@ -26,23 +26,27 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		*U,					// velocity
 		*RU,				// moment of impulse
 		*RE,				// total energy
+		*RS,
 		*S,					// entropy
 		*S_diff,            // entropy difference between current and previous step
-		*S_prev;			// entropy on the previous time step
+		*S_prev,			// entropy on the previous time step
+		*RS_prev,
+		*RS_diff;
 
 	double *FR,				// density flux
 		*FRU,				// moment flux
 		*FRE,				// energy flux
 		*FRS,				// entropy flux
+		*FRUS,
 		*FRS_PREV,			// entropy2 flux
 		*FRS_DIFF,			// entropy3 flux
 		*UFLUX;				// velocity flux
 
-	double *R2,				// density
-		*P2,					// pressure
-		*U2,					// velocity
-		*RU2,				// moment of impulse
-		*RE2;				// total energy
+	double *R1, *R2,				// density
+		*P1, *P2,					// pressure
+		*U1, *U2,					// velocity
+		*RU1, *RU2,				// moment of impulse
+		*RE1, *RE2;				// total energy
 
     double *FR2,				// density flux
 	       *FRU2,				// moment flux
@@ -112,10 +116,19 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	mem_alloc(numcells, &U, 32);
 	mem_alloc(numcells, &S, 32);
 	mem_alloc(numcells, &RU, 32);
+	mem_alloc(numcells, &RS, 32);
 	mem_alloc(numcells, &RE, 32);
 	mem_alloc(numcells, &S_diff, 32);
+	mem_alloc(numcells, &RS_diff, 32);
 	mem_alloc(numcells, &S_prev, 32);
+	mem_alloc(numcells, &RS_prev, 32);
 	mem_alloc(numcells, &S_diff, 32);
+
+	mem_alloc(numcells, &R1, 32);
+	mem_alloc(numcells, &P1, 32);
+	mem_alloc(numcells, &U1, 32);
+	mem_alloc(numcells, &RU1, 32);
+	mem_alloc(numcells, &RE1, 32);
 
 	mem_alloc(numcells, &R2, 32);
 	mem_alloc(numcells, &P2, 32);
@@ -147,6 +160,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	mem_alloc(numcells + 1, &FRU, 32);
 	mem_alloc(numcells + 1, &FRE, 32);
 	mem_alloc(numcells + 1, &FRS, 32);
+	mem_alloc(numcells + 1, &FRUS, 32);
 	mem_alloc(numcells + 1, &FRS_PREV, 32);
 	mem_alloc(numcells + 1, &FRS_DIFF, 32);
 	mem_alloc(numcells + 1, &UFLUX, 32);
@@ -181,7 +195,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	start_t = omp_get_wtime();
 
 	/* Mesh */
-#pragma omp for simd schedule(simd:static)
+#pragma omp for schedule(static)
 	for (int i = 0; i < numcells; i++)
 	{
 		x_init[i] = i*dx + 0.5*dx;          // that are middles of cells
@@ -195,25 +209,28 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 	{
 		wtime = omp_get_wtime();
-#pragma omp for simd schedule(simd:static)
+#pragma omp for schedule(static)
 		for (int i = 0; i < numcells; i++)
 		{
 			R[i] = initial_density(x_init[i]);
 			P[i] = initial_pressure(x_init[i]);
 			U[i] = initial_velocity(x_init[i]);
-			S_prev[i] = log(P[i] / pow(R[i], GAMMA));
+			S_prev[i] = S_func(P[i], R[i]);
+			RS_prev[i] = R[i] * S_prev[i];
 		}
 		wtime = omp_get_wtime() - wtime;
 		LOOP_TIME[0][omp_get_thread_num()] += wtime;
 		printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[0][omp_get_thread_num()]);
 	}
 
+	printf("u = %lf", sw_U1);
+
 	/* Computation of RU and RE */
 	printf("Loop 1\n");
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 	{
 		wtime = omp_get_wtime();
-#pragma omp for simd schedule(simd:static)
+#pragma omp for schedule(static)
 		for (int i = 0; i < numcells; i++)
 		{
 			RU[i] = R[i] * U[i];
@@ -245,6 +262,13 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	while (timer < time_max)
 	{
 		iter++;
+
+#if 0
+		for (int i = 0; i < numcells; i++)
+			printf("u[%d] = %lf\n", i, U[i]);
+
+		system("pause");
+#endif
 		
 		loop_time = omp_get_wtime();
 #pragma omp parallel firstprivate(u1,u2,u3,u_loc) shared(u_max) num_threads(OMP_CORES)
@@ -281,6 +305,8 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		if (last) printf("CFL loop: %lf\n", cfl_time);
 		dtdx = tau / dx;
 
+		/* Step 1:  Q(1) = Q(n) + tau*R(n) */
+
 		/* Boundary conditions */
 		loop_time = omp_get_wtime();
 		boundary_conditions(numcells, timer, dss, uss, pss, R, U, P);
@@ -307,13 +333,14 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 		{
 			wtime = omp_get_wtime();
-#pragma omp for simd schedule(simd:static) 
+#pragma omp for schedule(static) 
 			for (int i = 0; i <= numcells; i++)
 			{
 				UFLUX[i] = uss[i];
 				FR[i] = dss[i] * uss[i];
 				FRU[i] = dss[i] * uss[i] * uss[i] + pss[i];
 				FRE[i] = (pss[i] / (GAMMA - 1.0) + 0.5*dss[i] * uss[i] * uss[i])*uss[i] + pss[i] * uss[i];
+				FRUS[i] = dss[i] * uss[i] * S_func(pss[i], dss[i]);
 			}
 			wtime = omp_get_wtime() - wtime;
 			LOOP_TIME[3][omp_get_thread_num()] += wtime;
@@ -325,7 +352,9 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		/* Second order scheme */
 		/* ----------------------------------------------- */
 #ifdef ORDER2
-#pragma omp parallel for simd schedule(simd:static)
+
+#if 1
+#pragma omp parallel for schedule(static)
 		for (int i = 0; i < numcells; i++)
 		{
 			R2[i] = R[i] - dtdx * (FR[i + 1] - FR[i]);
@@ -344,7 +373,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 			linear_solver(numcells, R2, U2, P2, dss, uss, pss, LOOP_TIME, last);
 		}
 
-#pragma omp parallel for simd schedule(simd:static) 
+#pragma omp parallel for schedule(static) 
 		for (int i = 0; i <= numcells; i++)
 		{
 			UFLUX2[i] = uss[i];
@@ -353,7 +382,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 			FRE2[i] = (pss[i] / (GAMMA - 1.0) + 0.5*dss[i] * uss[i] * uss[i])*uss[i] + pss[i] * uss[i];
 		}
 
-#pragma omp parallel for simd schedule(simd:static) 
+#pragma omp parallel for schedule(static) 
 		for (int i = 0; i <= numcells; i++)
 		{
 			UFLUX[i] = (UFLUX[i] + UFLUX2[i]) / 2;
@@ -361,13 +390,130 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 			FRU[i] = (FRU[i] + FRU2[i]) / 2;
 			FRE[i] = (FRE[i] + FRE2[i]) / 2;
 		}
+#else
+
+#pragma omp parallel for schedule(static)
+		for (int i = 0; i < numcells; i++)
+		{
+			R2[i] = R[i] - dtdx * (FR[i + 1] - FR[i]);
+			RU2[i] = RU[i] - dtdx * (FRU[i + 1] - FRU[i]);
+			RE2[i] = RE[i] - dtdx * (FRE[i + 1] - FRE[i]);
+		}
+
+#pragma omp parallel for schedule(static) 
+		for (int i = 0; i <= numcells; i++)
+		{
+			R[i] = (R[i] + R2[i]) / 2;
+			RU[i] = (RU[i] + RU2[i]) / 2;
+			RE[i] = (RE[i] + RE2[i]) / 2;
+			U[i] = RU[i] / R[i];
+			P[i] = (GAMMA - 1.0) * (RE[i] - 0.5 * RU[i] * U[i]);
+		}
+
+		if (timer < CROSS_POINT)
+		{
+			nonlinear_solver(numcells, R, U, P, dss, uss, pss);
+		}
+		else
+		{
+			linear_solver(numcells, R, U, P, dss, uss, pss, LOOP_TIME, last);
+		}
+
+#pragma omp parallel for schedule(static) 
+		for (int i = 0; i <= numcells; i++)
+		{
+			UFLUX[i] = uss[i];
+			FR[i] = dss[i] * uss[i];
+			FRU[i] = dss[i] * uss[i] * uss[i] + pss[i];
+			FRE[i] = (pss[i] / (GAMMA - 1.0) + 0.5*dss[i] * uss[i] * uss[i])*uss[i] + pss[i] * uss[i];
+		}
+#endif
+#else
+#ifdef ORDER4
+#pragma omp parallel for schedule(static)
+		for (int i = 0; i < numcells; i++)
+		{
+			R1[i] = R[i] - dtdx * (FR[i + 1] - FR[i]);
+			RU1[i] = RU[i] - dtdx * (FRU[i + 1] - FRU[i]);
+			RE1[i] = RE[i] - dtdx * (FRE[i + 1] - FRE[i]);
+			U1[i] = RU1[i] / R1[i];
+			P1[i] = (GAMMA - 1.0) * (RE1[i] - 0.5 * RU1[i] * U1[i]);
+		}
+
+		/* Step 2: Q(2) = 3/4*Q(n) + 1/4*Q(1) + tau/4*R(1) */
+
+		boundary_conditions(numcells, timer, dss, uss, pss, R1, U1, P1);
+
+		if (timer < CROSS_POINT)
+		{
+			nonlinear_solver(numcells, R1, U1, P1, dss, uss, pss);
+		}
+		else
+		{
+			linear_solver(numcells, R1, U1, P1, dss, uss, pss, LOOP_TIME, last);
+		}
+
+#pragma omp parallel for schedule(static) 
+		for (int i = 0; i <= numcells; i++)
+		{
+			FR[i] = dss[i] * uss[i];
+			FRU[i] = dss[i] * uss[i] * uss[i] + pss[i];
+			FRE[i] = (pss[i] / (GAMMA - 1.0) + 0.5*dss[i] * uss[i] * uss[i])*uss[i] + pss[i] * uss[i];
+		}
+
+#pragma omp parallel for schedule(static)
+		for (int i = 0; i < numcells; i++)
+		{
+			R2[i] = 0.75 * R[i] + 0.25 * R1[i] - 0.25 * dtdx * (FR[i + 1] - FR[i]);
+			RU2[i] = 0.75 * RU[i] + 0.25 * RU1[i] - 0.25 * dtdx * (FRU[i + 1] - FRU[i]);
+			RE2[i] = 0.75 * RE[i] + 0.25 * RE1[i] - 0.25 * dtdx * (FRE[i + 1] - FRE[i]);
+			U2[i] = RU2[i] / R2[i];
+			P2[i] = (GAMMA - 1.0) * (RE1[i] - 0.5 * RU2[i] * U2[i]);
+		}
+
+		/* Step 3: Q(n+1) = 1/3*Q(n) + 2/3*Q(2) + 2*tau/3*R(2) */
+
+		boundary_conditions(numcells, timer, dss, uss, pss, R2, U2, P2);
+
+		if (timer < CROSS_POINT)
+		{
+			nonlinear_solver(numcells, R2, U2, P2, dss, uss, pss);
+		}
+		else
+		{
+			linear_solver(numcells, R2, U2, P2, dss, uss, pss, LOOP_TIME, last);
+		}
+
+#pragma omp parallel for schedule(static) 
+		for (int i = 0; i <= numcells; i++)
+		{
+			FR[i] = dss[i] * uss[i];
+			FRU[i] = dss[i] * uss[i] * uss[i] + pss[i];
+			FRE[i] = (pss[i] / (GAMMA - 1.0) + 0.5*dss[i] * uss[i] * uss[i])*uss[i] + pss[i] * uss[i];
+		}
+
+#pragma omp parallel for schedule(static)
+		for (int i = 0; i < numcells; i++)
+		{
+			R[i] = R[i] / 3.0 + 2.0 / 3 * R2[i] - 2.0 / 3 * dtdx * (FR[i + 1] - FR[i]);
+			RU[i] = RU[i] / 3.0 + 2.0 / 3 * RU2[i] - 2.0 / 3 * dtdx * (FRU[i + 1] - FRU[i]);
+			RE[i] = RE[i] / 3.0 + 2.0 / 3 * RE2[i] - 2.0 / 3 * dtdx * (FRE[i + 1] - FRE[i]);
+			U[i] = RU[i] / R[i];
+			P[i] = (GAMMA - 1.0) * (RE1[i] - 0.5 * RU[i] * U[i]);
+
+			S[i] = log(P[i] / pow(R[i], GAMMA));
+			S_diff[i] = S[i] - S_prev[i];
+			S_prev[i] = S[i];
+		}
+#endif
 #endif
 		/*------------------------------------------------*/
 
+#ifndef ORDER4
 		/* Flux entropy check */
 #pragma omp parallel num_threads(OMP_CORES)
 		{
-#pragma omp for simd schedule(simd:static) 
+#pragma omp for schedule(static) 
 			for (int i = 0; i <= numcells; i++)
 			{
 				FRS[i] = dss[i] * log(pss[i] / pow(dss[i], GAMMA));
@@ -377,7 +523,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		}
 
 		/* Euler coordinates */
-#pragma omp parallel for simd schedule(simd:static)
+#pragma omp parallel for schedule(static)
 		for (int i = 0; i < numcells; i++)
 		{
 			x_n1[i] = x_n[i] + tau * UFLUX[i];
@@ -389,7 +535,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 		{
 			wtime = omp_get_wtime();
-#pragma omp for simd schedule(simd:static)
+#pragma omp for schedule(static)
 			for (int i = 0; i < numcells; i++)
 			{
 				R[i] = R[i] - dtdx * (FR[i + 1] - FR[i]);
@@ -409,15 +555,19 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
 		{
 			wtime = omp_get_wtime();
-#pragma omp for simd schedule(simd:static)
+#pragma omp for schedule(static)
 			for (int i = 0; i < numcells; i++) 
 			{
 				U[i] = RU[i] / R[i]; 
 				P[i] = (GAMMA - 1.0) * (RE[i] - 0.5 * RU[i] * U[i]);
-				S[i] = log(P[i] / pow(R[i], GAMMA));
+				S[i] = S_func(P[i], R[i]);
+				RS[i] = R[i] * S[i];
 
 				S_diff[i] = S[i] - S_prev[i];
+				RS_diff[i] = (RS[i] - RS_prev[i]) + dtdx * (FRUS[i + 1] - FRUS[i]);
+
 				S_prev[i] = S[i];
+				RS_prev[i] = RS[i];
 			}
 			wtime = omp_get_wtime() - wtime;
 			LOOP_TIME[5][omp_get_thread_num()] += wtime;
@@ -425,6 +575,8 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		}
 		loop_full[5] += omp_get_wtime() - loop_time;
 		if (last) printf("Full time loop: %lf\n", loop_full[5]);
+
+#endif
 
 #if (PROBLEM==0)
 #ifdef DIFF_ANALYT
@@ -451,13 +603,13 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #if (PROBLEM == 18)
 		file_n_smooth_steps(numcells, timer, tau, x_n1, R, U, P, RE, S, S_diff, UFLUX);
 #else
-		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RE, S, S_diff, FRS_DIFF);
+		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RS_diff, S, S_diff, FRS_DIFF);
 #endif
 #else
-		output_last_step(numcells, dx, D_analit, R, U, P);
+	//	output_last_step(numcells, dx, D_analit, R, U, P);
 #endif
 		/* Euler coordinates */
-#pragma omp parallel for simd schedule(simd:static)
+#pragma omp parallel for schedule(static)
 		for (int i = 0; i < numcells; i++)
 		{
 			x_n[i] = x_n1[i];

@@ -36,6 +36,7 @@ to enable the respective job.
 #ifdef INTEGRAL
 #define RUNGE
 #undef PRINT
+#undef OUTPUT_N_SMOOTH
 #endif
 
 // 2) Other processing
@@ -56,9 +57,10 @@ to enable the respective job.
 //#define BOUND_COND
 //#define DEBUG
 
-#define ORDER2
+//#define ORDER2
+//#define ORDER4
 
-#define NUM_ITER 8
+#define NUM_ITER 6
 
 #define GRID 3
 
@@ -82,7 +84,7 @@ to enable the respective job.
 7 - two rarefaction waves propagates in different directions
 8 - two shock waves + count of points on the waves; strong sw
 9 - test Sod
-10 - some experiments
+10 - shock wave intersect with shock wave -->   <---
 11 - shock wave intersect with rarefaction domain -->   <---
 12 - test Toro 1
 13 - test Toro 2
@@ -102,7 +104,7 @@ to enable the respective job.
 #define X1 0.05
 #define X2 0.95
 #define T1 0.0
-#define T2 0.5
+#define T2 0.25
 #endif
 
 
@@ -159,6 +161,8 @@ to enable the respective job.
 
 // SW 1 // SW 2 // SW 3
 
+// R1, P1, U1 // R2, U2, P2 // R3, U3, P3
+
 #define st_R3 1.0
 #define st_P3 1.0
 #define st_U3 0.0
@@ -187,6 +191,9 @@ to enable the respective job.
 #define st_th_U1 ((sw_speed2(st_th_R2, st_th_U2, st_th_P2, st_th_R1, st_th_P1)*(1.0 - (st_th_R2)/(st_th_R1))) + ((st_th_R2)*(st_th_U2)/(st_th_R1)))
 
 /***************************************************/
+
+// Problem 10
+// SW // -----------// SW //
 
 // Problem 11
 // RW // --------- // SW // 
@@ -221,7 +228,7 @@ to enable the respective job.
 #elif (PROBLEM == 8) || (PROBLEM==20)
 #define DISC_POINT 0.2
 #elif (PROBLEM == 10)
-#define DISC_POINT 0.2
+#define DISC_POINT 0.0 // 0.2
 #elif (PROBLEM == 11)
 #define DISC_POINT 0.0
 #elif (PROBLEM == 12)
@@ -273,8 +280,17 @@ extern float right_SW[];
 extern float left_19[];
 extern float right_19[];
 
+extern float left_6[];
+extern float right_6[];
+
 extern float left_7[];
 extern float right_7[];
+
+extern float left_10[];
+extern float right_10[];
+
+extern float left_11[];
+extern float right_11[];
 
 extern float left_SW_cs[];
 extern float right_SW_cs[];

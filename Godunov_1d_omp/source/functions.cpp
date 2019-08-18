@@ -20,7 +20,7 @@ void linear_solver(int numcells, double* R, double* U, double* P, double* dss, d
 	{
 		wtime = omp_get_wtime();
 
-#pragma omp for simd schedule(simd:static) // schedule(dynamic,64) 
+#pragma omp for schedule(static) // schedule(dynamic,64) 
 		for (int i = 1; i < numcells; i++)
 		{
 
@@ -182,7 +182,9 @@ void boundary_conditions(int numcells, double timer, double *dss, double *uss, d
 
 #elif (PROBLEM == 19)
 
-	uss[0] = timer;
+	if (timer <= 4) uss[0] = timer;
+	else uss[0] = 4;
+
 	c0 = sqrt(GAMMA*P[0] / R[0]);
 
 	double l0_const = U[0] - P[0] / (R[0] * c0);
@@ -197,8 +199,8 @@ void boundary_conditions(int numcells, double timer, double *dss, double *uss, d
 #if 0
 	linear(R[numcells - 1], U[numcells - 1], P[numcells - 1], R[numcells - 1], U[numcells - 1], P[numcells - 1], dss[numcells], uss[numcells], pss[numcells]);
 #else
-	pss[numcells] = 0.5;
-	//	pss[numcells] = initial_pressure(LENGTH);
+	//pss[numcells] = 0.5;
+	pss[numcells] = initial_pressure(LENGTH);
 
 	cn = sqrt(GAMMA*P[numcells - 1] / R[numcells - 1]);
 
@@ -241,7 +243,7 @@ void boundary_conditions(int numcells, double timer, double *dss, double *uss, d
 	dss[numcells] = R[numcells - 1] + R[numcells - 1] / cn * (uss[numcells] - U[numcells - 1]);
 
 	linear(R[0], U[0], P[0], R[0], U[0], P[0], dss[0], uss[0], pss[0]);
-#elif (PROBLEM == 11)
+#elif (PROBLEM == 11 || PROBLEM == 10)
 
 	// RIGHT
 
@@ -254,10 +256,60 @@ void boundary_conditions(int numcells, double timer, double *dss, double *uss, d
 
 	uss[numcells] = rn_const - pss[numcells] / (R[numcells - 1] * cn);
 
+	//sn = log(P[numcells - 1] / pow(R[numcells - 1], GAMMA));
+
+	//R3 = dl - dl / cl * (bigU - ul);
+	dss[numcells] = R[numcells - 1] * (1.0 - (uss[numcells] - U[numcells - 1]) / cn);
+
+	// LEFT
+
+	pss[0] = initial_pressure(0.0);
+	//	pss[numcells] = initial_pressure(LENGTH);
+
+	c0 = sqrt(GAMMA*P[0] / R[0]);
+
+	double r0_const = U[0] - P[0] / (R[0] * c0);
+
+	uss[0] = r0_const + pss[0] / (R[0] * c0);
+
+	s0 = log(P[0] / pow(R[0], GAMMA));
+
+	//R3 = dl + dl / cl * (bigU - ul);
+	dss[0] = R[0] * (1.0 + (uss[0] - U[0]) / c0);
+
+#if 0
+	printf("c0 = %lf\n", c0);
+	printf("cn = %lf\n", cn);
+	printf("s0 = %lf\n", s0);
+	printf("sn = %lf\n", sn);
+	printf("r0_const = %lf\n", r0_const);
+	printf("rn_const = %lf\n", rn_const);
+
+	printf("U_left = %lf\n", uss[0]);
+	printf("U_right = %lf\n", uss[numcells]);
+	printf("R_left = %lf\n", dss[0]);
+	printf("R_right = %lf\n", dss[numcells]);
+	printf("P_left = %lf\n", pss[0]);
+	printf("P_right = %lf\n", pss[numcells]);
+#endif
+
+#elif (PROBLEM == 10)
+
+	// RIGHT
+
+	uss[numcells] = initial_velocity(1.0);
+	//	pss[numcells] = initial_pressure(LENGTH);
+
+	cn = sqrt(GAMMA*P[numcells - 1] / R[numcells - 1]);
+
+	double rn_const = U[numcells - 1] + P[numcells - 1] / (R[numcells - 1] * cn);
+
+	pss[numcells] = (rn_const - uss[numcells]) * (R[numcells - 1] * cn);
+
 	sn = log(P[numcells - 1] / pow(R[numcells - 1], GAMMA));
 
 	//R3 = dl - dl / cl * (bigU - ul);
-	dss[numcells] = R[numcells - 1] + R[numcells - 1] / cn * (uss[numcells] - U[numcells - 1]);
+	dss[numcells] = R[numcells - 1] - R[numcells - 1] / cn * (uss[numcells] - U[numcells - 1]);
 
 	// LEFT
 
@@ -274,6 +326,7 @@ void boundary_conditions(int numcells, double timer, double *dss, double *uss, d
 
 	//R3 = dl - dl / cl * (bigU - ul);
 	dss[0] = R[0] + R[0] / c0 * (uss[0] - U[0]);
+
 #endif
 }
 
@@ -717,10 +770,9 @@ double initial_density(double x)
 			else return st_R3;
 	case 9: if (x <= DISC_POINT) return 1.0;
 			else return 0.125;
-	case 10: if (x <= DISC_POINT) return st_th_R1;
-			 else return st_th_R2;
-			 //case 10: return -0.55*tanh(2 * PI*(x - 0.5)) + 1.546; // weak
-			 //case 10: return -0.9*tanh(2 * PI*(x - 0.5)) + 1.9; // strong
+	case 10: if (x <= DISC_POINT) return 1.271413930046081;
+			 else if (x >= LENGTH - DISC_POINT) return 1.271413930046081;
+			 else return 1.0;
 	case 11: if (x <= DISC_POINT) return sw_R1;
 			 else if (x >= LENGTH - DISC_POINT) return rw_R3;
 			 else return rw_R2;
@@ -786,9 +838,10 @@ double initial_pressure(double x)
 
 			//case 10: return -2 * tanh(2 * PI*(x - 0.5)) + 3; //strong
 
+	case 10: if (x <= DISC_POINT) return 1.401789770179879;
+			 else if (x >= LENGTH - DISC_POINT) return 1.201789770179879;
+			 else return 1.0;
 
-	case 10: if (x <= DISC_POINT) return st_th_P1;
-			 else return st_th_P2;
 	case 11: if (x <= DISC_POINT) return sw_P1;
 			 else if (x >= LENGTH - DISC_POINT) return rw_P3;
 			 else return rw_P2;
@@ -856,8 +909,9 @@ double initial_velocity(double x)
 			else if (x <= 0.3) return st_U2;
 			else return st_U3;
 	case 9: return 0.0;
-	case 10: if (x <= DISC_POINT) return st_th_U1;
-			 else return st_th_U2;
+	case 10: if (x <= DISC_POINT) return 0.292868067614595;
+			 else if (x >= LENGTH - DISC_POINT) return 0.292868067614595;
+			 else return 0.0;
 			 //	case 10: return -0.51*tanh(2 * PI*(x - 0.5)) + 0.51; // weak
 
 			 //case 10: return -0.8*tanh(2 * PI*(x - 0.5)) + 0.8; // strong
@@ -887,12 +941,12 @@ double initial_velocity(double x)
 }
 
 void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer,
-	double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *FRS_DIFF)
+	double *R, double *U, double* P, double *RS_diff, double *S, double *S_diff, double *FRS_DIFF)
 {
 	FILE* fout, *fout_NC;
 	char FileName[255], FileName2[255];
 	double dx = LENGTH / double(numcells);
-	double ps, us, ds, cs, es, es_d, frs_d;
+	double ps, us, ds, cs, es, es_d, rs_d;
 	double D_analit = 1.371913;
 
 	int proverka[N_smooth] = { 0 };
@@ -928,10 +982,10 @@ void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer
 				cs = sqrt(GAMMA*P[i] / R[i]);
 				es = S[i];
 				es_d = S_diff[i];
-				frs_d = FRS_DIFF[i];
+				rs_d = RS_diff[i];
 
 #ifndef NC
-				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, es_d, frs_d);
+				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, es_d, rs_d);
 #else
 				fprintf(fout_NC, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x, ds, us, ps, cs, es, es_d);
 #endif
@@ -945,6 +999,11 @@ void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer
 
 		}
 	}
+}
+
+double S_func(double p, double ro)
+{
+	return log(p / pow(ro, GAMMA));
 }
 
 
@@ -1537,7 +1596,7 @@ void difference_analitical_riemann_Linf(int numb, double *R, double *U, double *
 	delta_p = 0;
 
 
-#pragma omp parallel for simd schedule(simd: static)
+#pragma omp parallel for schedule(static)
 	for (int i = 0; i < new_numcells; i++)
 	{
 		x_lay[i] = i*dx + 0.5*dx;
@@ -1578,7 +1637,7 @@ void difference_analitical_riemann_L1(int numb, double *R, double *U, double *P,
 	mem_alloc(new_numcells, &difference_U, 32);
 	mem_alloc(new_numcells, &difference_P, 32);
 
-#pragma omp parallel for simd schedule(simd: static)
+#pragma omp parallel for schedule(static)
 	for (int i = 0; i < new_numcells; i++)
 	{
 		x_lay[i] = i*dx + 0.5*dx;
@@ -1587,7 +1646,7 @@ void difference_analitical_riemann_L1(int numb, double *R, double *U, double *P,
 		difference_P[i] = fabs(P[i] - R_P[i]);
 	}
 
-#pragma omp parallel for reduction(+:sum_ro,sum_u,sum_p)
+//#pragma omp parallel for reduction(+:sum_ro,sum_u,sum_p)
 	for (int i = 0; i < new_numcells; i++)
 	{
 		sum_ro += difference_R[i];
@@ -1712,7 +1771,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 	if (timer >= tt1 && check1 == 0)
 	{
 
-#pragma omp parallel for reduction(+:sum_b_M,sum_b_I,sum_b_S,sum_b_E) schedule(guided) num_threads(OMP_CORES)
+//#pragma omp parallel for reduction(+:sum_b_M,sum_b_I,sum_b_S,sum_b_E) schedule(guided) num_threads(OMP_CORES)
 		for (int i = 0; i < numcells; i++)
 		{
 			if (xx[i] >= xx1 && xx[i] <= xx2)
@@ -1730,7 +1789,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 
 	if (timer >= tt2 && check2 == 0)
 	{
-#pragma omp parallel for reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided) num_threads(OMP_CORES)
+//#pragma omp parallel for reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided) num_threads(OMP_CORES)
 		for (int i = 0; i < numcells; i++)
 		{
 			if (xx[i] >= xx1 && xx[i] <= xx2)

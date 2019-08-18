@@ -33,13 +33,13 @@ int main()
 		run[i] = 1;
 #else
 	run[0] = 1; // 100
-	run[1] = 0; // 300
+	run[1] = 1; // 300
 	run[2] = 0; // 900
 	run[3] = 0; // 2700
-	run[4] = 0; // 8100
+	run[4] = 1; // 8100
 	run[5] = 0;
-	run[6] = 0; // 72000
-	run[7] = 0;
+//	run[6] = 0; // 72000
+//	run[7] = 0;
 #endif
 
 #if 1
@@ -67,6 +67,12 @@ int main()
 	time = 0.04;
 	//time = 0.3500; P0
 	time = 0.2550; // P2
+
+	// P6
+	time = 0.1800;
+
+	// P10
+	time = 0.4400;
 	gnuplot_all_iter_one_time(run, 4, time);
 
 	duration = omp_get_wtime() - start;

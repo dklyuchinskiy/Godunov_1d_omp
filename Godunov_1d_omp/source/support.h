@@ -28,6 +28,7 @@ double sw_speed2(double ro1, double u1, double p1, double ro2, double p2);
 double sw_speed(double ro1, double ro2, double u1, double u2);
 double* finite_difference(int numb, double *mas);
 double RW_prop(int digit, double x, double numb, double ip_l, double id_l, double iu_l, double ip_r, double id_r, double iu_r);
+double S_func(double p, double ro);
 
 void iteration(int numb, double* F_ro, double* ITER_TIME);
 void linear(double dl, double ul, double pl, double dr, double ur, double pr, double &d, double &u, double &p);
