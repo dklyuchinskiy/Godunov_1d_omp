@@ -964,11 +964,11 @@ void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer
 		if (fabs(timer - time_control[k]) <= tau && proverka[k] == 0)
 		{
 #ifndef NC					
-			sprintf(FileName, "workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, time_control[k]);
+			sprintf(FileName, "workspace/%03d/N%03d_P%1d_SLV%1d_%c_%6.4lf.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, (char)TYPE, time_control[k]);
 			fout = fopen(FileName, "w");
 			fprintf(fout, "Timer: %lf\n", timer);
 #else
-			sprintf(FileName2, "workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf_NC.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, time_control[k]);
+			sprintf(FileName2, "workspace/%03d/N%03d_P%1d_SLV%1d_%c_%6.4lf_NC.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, (char)TYPE, time_control[k]);
 			fout_NC = fopen(FileName2, "w");
 			fprintf(fout_NC, "Timer: %lf\n", timer);
 #endif
@@ -1771,7 +1771,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 	if (timer >= tt1 && check1 == 0)
 	{
 
-//#pragma omp parallel for reduction(+:sum_b_M,sum_b_I,sum_b_S,sum_b_E) schedule(guided) num_threads(OMP_CORES)
+#pragma omp parallel for reduction(+:sum_b_M,sum_b_I,sum_b_S,sum_b_E) schedule(guided)
 		for (int i = 0; i < numcells; i++)
 		{
 			if (xx[i] >= xx1 && xx[i] <= xx2)
@@ -1789,7 +1789,7 @@ void outline_integral_riemann(int numcells, double timer, double tau, double tt1
 
 	if (timer >= tt2 && check2 == 0)
 	{
-//#pragma omp parallel for reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided) num_threads(OMP_CORES)
+#pragma omp parallel for reduction(+:sum_t_M,sum_t_I,sum_t_S,sum_t_E) schedule(guided)
 		for (int i = 0; i < numcells; i++)
 		{
 			if (xx[i] >= xx1 && xx[i] <= xx2)
@@ -1828,7 +1828,7 @@ void inf_before_start(int numcells, double *R, double *U, double *P, double &D_a
 { 
 #if (PROBLEM == 0)
 	D_analit = (R[numcells - 1] * U[numcells - 1] - R[0] * U[0]) / (R[numcells - 1] - R[0]);
-	printf("Analitical speed: %10.8lf\n\n", D_analit);
+	printf("Analitical speed of shock wave: %10.8lf\n\n", D_analit);
 #elif (PROBLEM == 12)
 	double uc_left, uc_right;
 
@@ -1983,9 +1983,9 @@ void analitical_writing_into_file(int numcells, double* R_D, double*R_U, double*
 	D_analit = (ro_right * u_right - ro_left * u_left) / (ro_right - ro_left);
 
 #ifndef NC
-	sprintf(name1, "workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, timer);
+	sprintf(name1, "workspace/%03d/N%03d_P%1d_SLV%1d_analit_%6.4lf.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, timer);
 #else
-	sprintf(name1, "workspace/%03d/NC_N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, timer);
+	sprintf(name1, "workspace/%03d/NC_N%03d_P%1d_SLV%1d_analit_%6.4lf.dat", numcells, numcells, PROBLEM, RUNGE_KUTTA, timer);
 #endif
 
 	fout = fopen(name1, "w");

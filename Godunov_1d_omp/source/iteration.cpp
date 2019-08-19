@@ -223,8 +223,6 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		printf("Time taken by thread %d is %f\n", omp_get_thread_num(), LOOP_TIME[0][omp_get_thread_num()]);
 	}
 
-	printf("u = %lf", sw_U1);
-
 	/* Computation of RU and RE */
 	printf("Loop 1\n");
 #pragma omp parallel private(wtime) num_threads(OMP_CORES)
@@ -262,16 +260,9 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	while (timer < time_max)
 	{
 		iter++;
-
-#if 0
-		for (int i = 0; i < numcells; i++)
-			printf("u[%d] = %lf\n", i, U[i]);
-
-		system("pause");
-#endif
 		
 		loop_time = omp_get_wtime();
-#pragma omp parallel firstprivate(u1,u2,u3,u_loc) shared(u_max) num_threads(OMP_CORES)
+#pragma omp parallel firstprivate(u1,u2,u3,u_loc) shared(u_max)
 		{
 			/* CFL condition */
 #pragma omp for schedule(static, omp_chunk) nowait
@@ -429,7 +420,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		}
 #endif
 #else
-#ifdef ORDER4
+#ifdef ORDER3
 #pragma omp parallel for schedule(static)
 		for (int i = 0; i < numcells; i++)
 		{
@@ -509,7 +500,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #endif
 		/*------------------------------------------------*/
 
-#ifndef ORDER4
+#ifndef ORDER3
 		/* Flux entropy check */
 #pragma omp parallel num_threads(OMP_CORES)
 		{
@@ -601,7 +592,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		/* Output to several files during computations */
 #ifdef OUTPUT_N_SMOOTH
 #if (PROBLEM == 18)
-		file_n_smooth_steps(numcells, timer, tau, x_n1, R, U, P, RE, S, S_diff, UFLUX);
+		file_n_smooth_steps(numcells, timer, tau, x_n1, R, U, P, RS_diff, S, S_diff, UFLUX);
 #else
 		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RS_diff, S, S_diff, FRS_DIFF);
 #endif
