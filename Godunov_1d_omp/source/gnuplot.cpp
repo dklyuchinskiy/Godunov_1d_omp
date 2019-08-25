@@ -59,8 +59,8 @@ void gnuplot_n_smooth(int numb)
 #endif
 				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/LP%03d_P%1d_%6.4lf_%c.png'\n", nmesh[numb], prop[i], PROBLEM, nmesh[numb], PROBLEM, (k + 1)*k_step, prop[i]);
 				//fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/SZ%03d_P%1d_%6.4lf_%c.png'\n", nmesh[numb], prop[i], PROBLEM, nmesh[numb], PROBLEM, (k + 1)*k_step, prop[i]);
-				//fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4f.dat' using 1:%d w l lw 2 notitle\n\n", nmesh[numb], nmesh[numb], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (k + 1)* k_step, i + 2);
-				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4f.dat' using 1:%d w linespoints pt 7 notitle\n\n", nmesh[numb], nmesh[numb], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (k + 1)* k_step, i + 2);
+				//fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4f.dat' using 1:%d w l lw 2 notitle\n\n", nmesh[numb], nmesh[numb], PROBLEM, RUNGE_KUTTA, (k + 1)* k_step, i + 2);
+				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4f.dat' using 1:%d w linespoints pt 7 notitle\n\n", nmesh[numb], nmesh[numb], PROBLEM, RUNGE_KUTTA, (k + 1)* k_step, i + 2);
 #ifdef TIME
 			}
 #endif
@@ -176,7 +176,7 @@ void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth],
 #endif
 #endif
 
-			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 lt rgb 'purple' notitle\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, (k + 1)* k_step, i + 2);
+			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_%c_%6.4f.dat' using 1:%d w linespoints pt 7 lt rgb 'purple' notitle\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, (char)TYPE, (k + 1)* k_step, i + 2);
 
 		}
 		small = 0;
@@ -213,13 +213,13 @@ void gnuplot_all_iter_one_time(int run[NUM_ITER], int numb, double time)
 		if (i == 6)	fprintf(plot, "set ylabel \"entropy integral difference\"\n");
 		fprintf(plot, "set output 'workspace/all_iter_one_time%6.4f_P%1d_%c_%c.png' \n\n", time, PROBLEM, (char)TYPE, prop[i]);
 		fprintf(plot, "plot ");
-
+		
 		for (int j = 0; j <= numb; j++)
 		{
 			if (run[j] != 0)
 			{
 				int numcells = 100 * pow(3, j);
-				fprintf(plot, "'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title \"N = %03d\"", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (char)TYPE, time, i + 2, numcells);
+				fprintf(plot, "'workspace/%03d/N%03d_P%1d_SLV%1d_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title \"N = %03d\"", numcells, numcells, PROBLEM, RUNGE_KUTTA, (char)TYPE, time, i + 2, numcells);
 				if (j < numb) fprintf(plot, ", ");
 			}
 
@@ -299,9 +299,9 @@ void gnuplot_n_smooth3(int numcells)
 #endif
 			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/W%03d_P%1d_%6.4lf_%c.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
 
-			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title 'exact RP', \
-						  'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title 'linear RP' \n\n",
-				numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, 'E', (k + 1)* k_step, i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, 'L', (k + 1)* k_step, i + 2);
+			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title 'exact RP', \
+						  'workspace/%03d/N%03d_P%1d_SLV%1d_%c_%6.4f.dat' using 1:%d w linespoints pt 7 title 'linear RP' \n\n",
+				numcells, numcells, PROBLEM, RUNGE_KUTTA, 'E', (k + 1)* k_step, i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, 'L', (k + 1)* k_step, i + 2);
 
 		}
 		fclose(plot);
@@ -331,18 +331,18 @@ void gnuplot_one_iteration(int numcells) //together with analitical solution
 #if (PROBLEM==0)
 		fprintf(plot, "set xrange[-0.3:0.7]\n\n");
 		fprintf(plot, "set yrange[%3.2f:%9.7f]\n\
-					   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n\
-					   plot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle\n\n", left_SW[i], right_SW[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+					   set output 'N%04d_P%1d_SLV%1d_NORP_%c_NC.png'\n\
+					   plot 'N%04d_P%1d_SLV%1d.dat' using 1 : %d w l lw 3 notitle\n\n", left_SW[i], right_SW[i], numcells, PROBLEM, RUNGE_KUTTA, prop[i], numcells, PROBLEM, RUNGE_KUTTA, i + 2);
 #elif (PROBLEM==1)
 		fprintf(plot, "set xrange[0:5]\n\n");
 		fprintf(plot, "set yrange[%3.2f:%9.7f]\n\
-					   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n\
-					   plot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle", left_RW[i], right_RW[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+					   set output 'N%04d_P%1d_SLV%1d_NORP_%c_NC.png'\n\
+					   plot 'N%04d_P%1d_SLV%1d.dat' using 1 : %d w l lw 3 notitle", left_RW[i], right_RW[i], numcells, PROBLEM, RUNGE_KUTTA, prop[i], numcells, PROBLEM, RUNGE_KUTTA, i + 2);
 #elif(PROBLEM==2)
 		fprintf(plot, "set xrange[0:5]\n\n");
 		fprintf(plot, "set yrange[%3.2f:%9.7f]\n\
-					   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n\
-					   plot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle", left_RW[i], right_RW[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+					   set output 'N%04d_P%1d_SLV%1d_NORP_%c_NC.png'\n\
+					   plot 'N%04d_P%1d_SLV%1d.dat' using 1 : %d w l lw 3 notitle", left_RW[i], right_RW[i], numcells, PROBLEM, RUNGE_KUTTA, prop[i], numcells, PROBLEM, RUNGE_KUTTA, i + 2);
 
 #endif
 #else
@@ -356,7 +356,7 @@ void gnuplot_one_iteration(int numcells) //together with analitical solution
 		fprintf(plot, "set yrange[%3.2f:%3.2f]\n", left_RP[i], right_RP[i]);
 #endif
 
-		fprintf(plot, "set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_NORP_%c.png'\nplot 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 3 notitle", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i], numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+		fprintf(plot, "set output 'N%04d_P%1d_SLV%1d_NORP_%c.png'\nplot 'N%04d_P%1d_SLV%1d.dat' using 1 : %d w l lw 3 notitle", numcells, PROBLEM, RUNGE_KUTTA, prop[i], numcells, PROBLEM, RUNGE_KUTTA, i + 2);
 
 #if (PROBLEM==0) //analitical solution
 		switch (i)
@@ -409,12 +409,12 @@ void gnuplot_RW_DIFF(int numcells)
 	fprintf(plot, "set xrange[0:2]\n\n");
 #endif
 	fprintf(plot, "set yrange[-0.2:0.2]\n\
-				   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_RW_DIFF_U.png'\n\
-												  plot 'N%04d_RW_difference.dat' using 1 : 2 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells);
-	fprintf(plot, "set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_RW_DIFF_P.png'\n\
-				  				  				  plot 'N%04d_RW_difference.dat' using 1 : 3 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells);
-	fprintf(plot, "set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_RW_DIFF_R.png'\n\
-				  				  				  plot 'N%04d_RW_difference.dat' using 1 : 4 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells);
+				   set output 'N%04d_P%1d_SLV%1d_RW_DIFF_U.png'\n\
+												  plot 'N%04d_RW_difference.dat' using 1 : 2 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, numcells);
+	fprintf(plot, "set output 'N%04d_P%1d_SLV%1d_RW_DIFF_P.png'\n\
+				  				  				  plot 'N%04d_RW_difference.dat' using 1 : 3 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, numcells);
+	fprintf(plot, "set output 'N%04d_P%1d_SLV%1d_RW_DIFF_R.png'\n\
+				  				  				  plot 'N%04d_RW_difference.dat' using 1 : 4 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, numcells);
 
 	fclose(plot);
 	system("Plot_RW_DIFF.plt");
@@ -460,8 +460,8 @@ void gnuplot_P_PLUS_PG(int numcells)
 				   #################################\n\n");
 	fprintf(plot, "set xrange[-0.1:0.3]\n\n");
 	fprintf(plot, "set yrange[-0.1:1.5]\n\
-				   set output 'N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG.png'\n\
-				   plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG_NC.dat' using 1 : 2 w l lw 3 notitle, 'N%04d_P%1d_SLV%1d_TERM%.0lf_P_PLUS_PG_NC.dat' using 1 : 3 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
+				   set output 'N%04d_P%1d_SLV%1d_P_PLUS_PG.png'\n\
+				   plot 'N%04d_P%1d_SLV%1d_P_PLUS_PG_NC.dat' using 1 : 2 w l lw 3 notitle, 'N%04d_P%1d_SLV%1d_P_PLUS_PG_NC.dat' using 1 : 3 w l lw 3 notitle\n\n", numcells, PROBLEM, RUNGE_KUTTA, numcells, PROBLEM, RUNGE_KUTTA, numcells, PROBLEM, RUNGE_KUTTA);
 
 	fclose(plot);
 	system("Plot_P_PLUS_PG.plt");
@@ -492,13 +492,13 @@ void gnuplot_all_iterations_NC(int numb)
 
 #endif
 
-		fprintf(plot, "set output 'NSUM_P%1d_SLV%1d_TERM%.0lf_NORP_%c_NC.png'\n", PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, prop[i]);
+		fprintf(plot, "set output 'NSUM_P%1d_SLV%1d_NORP_%c_NC.png'\n", PROBLEM, RUNGE_KUTTA, prop[i]);
 
 		fprintf(plot, "plot ");
 		for (int j = 0; j < numb; j++)
 		{
-			fprintf(plot, "'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 2 notitle, ", nmesh[j], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
-			if (j == numb - 1) fprintf(plot, "'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1 : %d w l lw 2 notitle\n\n", nmesh[j], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+			fprintf(plot, "'N%04d_P%1d_SLV%1d.dat' using 1 : %d w l lw 2 notitle, ", nmesh[j], PROBLEM, RUNGE_KUTTA, i + 2);
+			if (j == numb - 1) fprintf(plot, "'N%04d_P%1d_SLV%1d.dat' using 1 : %d w l lw 2 notitle\n\n", nmesh[j], PROBLEM, RUNGE_KUTTA, i + 2);
 		}
 
 	}
@@ -554,11 +554,11 @@ void gnuplot_one_it_NC()
 			for (int j = 0; j < N_smooth; j++)
 			{
 #if (PROBLEM == 7)
-				if ((j + 1)*step >= 4.0) fprintf(plot, "'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf_NC.dat' using 1 : %d w l lw 2 notitle, ", nmesh[k], nmesh[k], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (j + 1)*step, i + 2);
+				if ((j + 1)*step >= 4.0) fprintf(plot, "'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4lf_NC.dat' using 1 : %d w l lw 2 notitle, ", nmesh[k], nmesh[k], PROBLEM, RUNGE_KUTTA, (j + 1)*step, i + 2);
 #else
-				fprintf(plot, "'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf_NC.dat' using 1 : %d w l lw 2 notitle, ", nmesh[k], nmesh[k], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (j + 1)*step, i + 2);
+				fprintf(plot, "'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4lf_NC.dat' using 1 : %d w l lw 2 notitle, ", nmesh[k], nmesh[k], PROBLEM, RUNGE_KUTTA, (j + 1)*step, i + 2);
 #endif
-				if (j == N_smooth - 1) fprintf(plot, "'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf_NC.dat' using 1 : %d w l lw 2 notitle\n\n", nmesh[k], nmesh[k], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (j + 1)*step, i + 2);
+				if (j == N_smooth - 1) fprintf(plot, "'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4lf_NC.dat' using 1 : %d w l lw 2 notitle\n\n", nmesh[k], nmesh[k], PROBLEM, RUNGE_KUTTA, (j + 1)*step, i + 2);
 			}
 			//	}
 
@@ -618,7 +618,7 @@ void gnuplot_five_t_steps(int numb)
 		for (int j = 0; j < N_smooth; j++) // шги по времени
 		{
 			fprintf(plot, "set output 'N%04d_P%1d_%4.2lf_%c.png'\n", nmesh[numb], PROBLEM, (j + 1)*0.05, prop[i]);
-			fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_%4.2f.dat' using 1:%d w l notitle\n\n", nmesh[numb], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (j + 1)* 0.05, i + 2);
+			fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_%4.2f.dat' using 1:%d w l notitle\n\n", nmesh[numb], PROBLEM, RUNGE_KUTTA, (j + 1)* 0.05, i + 2);
 
 		}
 
@@ -671,13 +671,13 @@ void gnuplot_n_smooth_NC(int numb)
 #else
 					fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/swp_N%03d_P%1d_%6.4lf_%c_NC.png'\n", nmesh[numb], prop[i], PROBLEM, nmesh[numb], PROBLEM, (k + 1)*k_step, prop[i]);
 #endif
-					fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4f_NC.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle\n\n", nmesh[numb], nmesh[numb], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (k + 1)* k_step, i + 2);
+					fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4f_NC.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle\n\n", nmesh[numb], nmesh[numb], PROBLEM, RUNGE_KUTTA, (k + 1)* k_step, i + 2);
 #else
 					fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/N%03d_P%1d_%6.4lf_%c_NC.png'\n", nmesh[numb], prop[i], PROBLEM, nmesh[numb], PROBLEM, (k + 1)*k_step, prop[i]);
-					fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4f_NC.dat' using 1:%d w l notitle\n\n", nmesh[numb], nmesh[numb], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (k + 1)* k_step, i + 2);
+					fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4f_NC.dat' using 1:%d w l notitle\n\n", nmesh[numb], nmesh[numb], PROBLEM, RUNGE_KUTTA, (k + 1)* k_step, i + 2);
 #endif
 					//	fprintf(plot, "set output 'N%04d_P%1d_%6.4lf_%c_NC.png'\n", nmesh[numb], PROBLEM, time_control[k], prop[i]);
-					//	fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_%6.4f_NC.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle\n\n", nmesh[numb], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
+					//	fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_%6.4f_NC.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle\n\n", nmesh[numb], PROBLEM, RUNGE_KUTTA, time_control[k], i + 2);
 #ifdef TIME
 				}
 #endif
@@ -732,10 +732,10 @@ void gnuplot_n_smooth_NC2(int numcells, int* n_r, int* n_u, int* n_p)
 #else
 			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/NC2_N%03d_P%1d_%6.4lf_%c_NC.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, (k + 1)*k_step, prop[i]);
 #endif
-			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4f_NC.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, (k + 1)* k_step, i + 2);
+			fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4f_NC.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, (k + 1)* k_step, i + 2);
 
 			//	fprintf(plot, "set output 'N%04d_P%1d_%6.4lf_%c_NC.png'\n", nmesh[numb], PROBLEM, time_control[k], prop[i]);
-			//	fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_%6.4f_NC.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle\n\n", nmesh[numb], PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
+			//	fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_%6.4f_NC.dat' using 1:%d w linespoints pt 7 notitle, f(x) lt rgb 'green' notitle, g(x) lt rgb 'green' notitle\n\n", nmesh[numb], PROBLEM, RUNGE_KUTTA, time_control[k], i + 2);
 		}
 
 
@@ -755,7 +755,7 @@ void gnuplot_analitical_riemann(int numcells, double* R, double*U, double*P, dou
 	double dx = LENGTH / double(numcells);
 	double x;
 
-	sprintf(name, "N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
+	sprintf(name, "N%04d_P%1d_SLV%1d_riemann_analit.dat", numcells, PROBLEM, RUNGE_KUTTA);
 	fout = fopen(name, "w");
 
 
@@ -792,12 +792,12 @@ void gnuplot_analitical_riemann(int numcells, double* R, double*U, double*P, dou
 		if (i == 1)	fprintf(plot, "set ylabel \"velocity\"\n");
 		if (i == 2)	fprintf(plot, "set ylabel \"pressure\"\n");
 #ifdef RP
-		fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat' using 1:%d w l lw 2 title \"exact\", 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w linespoints pt 4 lt rgb 'blue' title \"num\", 'RP_N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w linespoints pt 7 lt rgb 'green' title \"num_rp\" \n\n",
-			numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+		fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_riemann_analit.dat' using 1:%d w l lw 2 title \"exact\", 'N%04d_P%1d_SLV%1d.dat' using 1:%d w linespoints pt 4 lt rgb 'blue' title \"num\", 'RP_N%04d_P%1d_SLV%1d.dat' using 1:%d w linespoints pt 7 lt rgb 'green' title \"num_rp\" \n\n",
+			numcells, PROBLEM, RUNGE_KUTTA, i + 2, numcells, PROBLEM, RUNGE_KUTTA, i + 2, numcells, PROBLEM, RUNGE_KUTTA, i + 2);
 #else
-		fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat' using 1:%d w l lw 2 title \"exact\", 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+		fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_riemann_analit.dat' using 1:%d w l lw 2 title \"exact\", 'N%04d_P%1d_SLV%1d.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, PROBLEM, RUNGE_KUTTA, i + 2, numcells, PROBLEM, RUNGE_KUTTA, i + 2);
 #endif
-		//fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat' using 1:%d w l lw 2 title \"numerical\", 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w l lw 2 title \"exact\"\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+		//fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_riemann_analit.dat' using 1:%d w l lw 2 title \"numerical\", 'N%04d_P%1d_SLV%1d.dat' using 1:%d w l lw 2 title \"exact\"\n\n", numcells, PROBLEM, RUNGE_KUTTA, i + 2, numcells, PROBLEM, RUNGE_KUTTA, i + 2);
 
 		fprintf(plot, "\n\n");
 
@@ -862,23 +862,23 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 			if (i == 2)	fprintf(plot, "set ylabel \"pressure\"\n");
 			if (i == 4) fprintf(plot, "set ylabel \"entropy\"\n");
 #ifdef RP
-			fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat' using 1:%d w l lw 2 title \"exact\", 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w linespoints pt 4 lt rgb 'blue' title \"num\", 'RP_N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w linespoints pt 7 lt rgb 'green' title \"num_rp\" \n\n",
-				numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+			fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_riemann_analit.dat' using 1:%d w l lw 2 title \"exact\", 'N%04d_P%1d_SLV%1d.dat' using 1:%d w linespoints pt 4 lt rgb 'blue' title \"num\", 'RP_N%04d_P%1d_SLV%1d.dat' using 1:%d w linespoints pt 7 lt rgb 'green' title \"num_rp\" \n\n",
+				numcells, PROBLEM, RUNGE_KUTTA, i + 2, numcells, PROBLEM, RUNGE_KUTTA, i + 2, numcells, PROBLEM, RUNGE_KUTTA, i + 2);
 #else
 
 #ifndef NC
 			if (i != 4)
 			{
 				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
-				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%c_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, TYPE, time_control[k], i + 2);
+				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_%c_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, TYPE, time_control[k], i + 2);
 			}
 			else
 			{
 				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
-				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
+				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, time_control[k], i + 2);
 
 				fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/AV_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, prop[i], time_control[k]);
-				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 3);
+				fprintf(plot, "plot 'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4lf.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, time_control[k], i + 3);
 			}
 #else
 #ifdef NC2
@@ -895,13 +895,13 @@ void gnuplot_analitical_riemann2(int numcells, int* n_r, int* n_u, int* n_p)
 #else
 			fprintf(plot, "set output 'workspace/%03d/%c/P_%1d/NC_N%03d_P%1d_%c_analit_riemann_%6.4lf.png'\n", numcells, prop[i], PROBLEM, numcells, PROBLEM, dip[i], time_control[k]);
 #endif
-			fprintf(plot, "plot 'workspace/%03d/NC_N%03d_P%1d_SLV%1d_TERM%.0lf_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_TERM%.0lf_%6.4lf_NC.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, time_control[k], i + 2);
+			fprintf(plot, "plot 'workspace/%03d/NC_N%03d_P%1d_SLV%1d_analit_%6.4lf.dat' using 1:%d w l lw 2 title \"exact\", 'workspace/%03d/N%03d_P%1d_SLV%1d_%6.4lf_NC.dat' using 1:%d w linespoints pt 7 title \"numerical\"\n\n", numcells, numcells, PROBLEM, RUNGE_KUTTA, time_control[k], i + 2, numcells, numcells, PROBLEM, RUNGE_KUTTA, time_control[k], i + 2);
 #endif
 
 
 #endif
 		}
-		//fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_TERM%.0lf_riemann_analit.dat' using 1:%d w l lw 2 title \"numerical\", 'N%04d_P%1d_SLV%1d_TERM%.0lf.dat' using 1:%d w l lw 2 title \"exact\"\n\n", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2, numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM, i + 2);
+		//fprintf(plot, "plot 'N%04d_P%1d_SLV%1d_riemann_analit.dat' using 1:%d w l lw 2 title \"numerical\", 'N%04d_P%1d_SLV%1d.dat' using 1:%d w l lw 2 title \"exact\"\n\n", numcells, PROBLEM, RUNGE_KUTTA, i + 2, numcells, PROBLEM, RUNGE_KUTTA, i + 2);
 		fprintf(plot, "\nclear\nreset\n");
 		fprintf(plot, "\n\n");
 
@@ -917,10 +917,10 @@ void output_last_step(int numcells, double dx, double D_analit, double *R, doubl
 	char FileName[255];
 	FILE *fout;
 #ifndef RP
-	sprintf(FileName, "N%04d_P%1d_SLV%1d_TERM%.0lf.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
+	sprintf(FileName, "N%04d_P%1d_SLV%1d.dat", numcells, PROBLEM, RUNGE_KUTTA);
 	fout = fopen(FileName, "w");
 #else
-	sprintf(FileName, "RP_N%04d_P%1d_SLV%1d_TERM%.0lf.dat", numcells, PROBLEM, RUNGE_KUTTA, A_TERM*K_TERM);
+	sprintf(FileName, "RP_N%04d_P%1d_SLV%1d.dat", numcells, PROBLEM, RUNGE_KUTTA);
 	fout = fopen(FileName, "w");
 #endif
 

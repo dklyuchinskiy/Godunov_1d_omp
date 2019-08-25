@@ -57,9 +57,6 @@ to enable the respective job.
 //#define BOUND_COND
 //#define DEBUG
 
-//#define ORDER2
-//#define ORDER4
-
 #define NUM_ITER 6
 
 #define GRID 3
@@ -72,7 +69,7 @@ to enable the respective job.
 #define EPS		1.0e-6	// the threshold for the solving nonlinear solution
 #define MAX_ITER	20	// the number of iteration to find nonlinear solution
 
-#define PROBLEM		2
+#define PROBLEM		0
 /*
 0 - shock wave
 1 - rarify wave
@@ -131,33 +128,35 @@ to enable the respective job.
 #define CFL04 0.4
 #define CFL08 0.8
 
-#define PI			3.1415926535897932
-
-#define A_TERM		1.0			// term = - A * \vec{u} h^{2K-1} (dp/dx)^{2K}
-#define K_TERM		2.0			
+#define PI	3.1415926535897932
 
 #define GAMMA 1.4
-#define R0 8.93
-#define C0 3.97
 
-#define C1 1.0
+//#define ORDER2
+//#define ORDER4
 
+#ifdef ORDER2
+#define RUNGE_KUTTA 2
+#else
+#ifdef ORDER3
+#define RUNGE_KUTTA 3
+#else
+#define RUNGE_KUTTA	0	
+#endif
+#endif
 
-/**************************************/
-
-#define X_G(x) (pow((x), GAMMA))
-#define SQ_2(x) ((x)*(x)/2)
-
-/**************************************/
-
-#define RUNGE_KUTTA	0	/*	1 - Runge-Kutta method
+/*
 0 - Classic method
+2 - Runge-Kutta method order 2
+3 - Runge-Kutta method order 3
 */
 
 /***************************************/
 #if (PROBLEM==4)
 #define P4_ONE_WAVE
 #endif
+
+#define SQ_2(x) ((x)*(x)/2)
 
 // SW 1 // SW 2 // SW 3
 
