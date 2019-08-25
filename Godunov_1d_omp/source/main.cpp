@@ -73,6 +73,8 @@ int main()
 
 	// P10
 	time = 0.4400;
+
+	time = 0.2250; // P2
 	gnuplot_all_iter_one_time(run, 4, time);
 
 	duration = omp_get_wtime() - start;

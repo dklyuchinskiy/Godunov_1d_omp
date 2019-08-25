@@ -199,7 +199,7 @@ void gnuplot_all_iter_one_time(int run[NUM_ITER], int numb, double time)
 		time_control[i] = (i + 1)*k_step;
 		if (fabs(time_control[i] - time) < EPS) time = time_control[i]; // do not forget to set up an absolute value
 	}
-	for (int i = 0; i < 6; i++) // for each parameter of gas
+	for (int i = 0; i < 7; i++) // for each parameter of gas
 	{
 		if (i == 3) continue;
 		plot = fopen("all_iter.plt", "w");
@@ -210,6 +210,7 @@ void gnuplot_all_iter_one_time(int run[NUM_ITER], int numb, double time)
 		if (i == 2)	fprintf(plot, "set ylabel \"pressure\"\n");
 		if (i == 4)	fprintf(plot, "set ylabel \"entropy\"\n");
 		if (i == 5)	fprintf(plot, "set ylabel \"entropy difference\"\n");
+		if (i == 6)	fprintf(plot, "set ylabel \"entropy integral difference\"\n");
 		fprintf(plot, "set output 'workspace/all_iter_one_time%6.4f_P%1d_%c_%c.png' \n\n", time, PROBLEM, (char)TYPE, prop[i]);
 		fprintf(plot, "plot ");
 
