@@ -36,15 +36,12 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	double *FR,				// density flux
 		*FRU,				// moment flux
 		*FRE,				// energy flux
-		*FRS,				// entropy flux
-		*FRUS,
-		*FRS_PREV,			// entropy2 flux
-		*FRS_DIFF,			// entropy3 flux
+		*FRUS,				// entropy flux
 		*UFLUX;				// velocity flux
 
-	double *R1, *R2,				// density
-		*P1, *P2,					// pressure
-		*U1, *U2,					// velocity
+	double *R1, *R2,			// density
+		*P1, *P2,				// pressure
+		*U1, *U2,				// velocity
 		*RU1, *RU2,				// moment of impulse
 		*RE1, *RE2;				// total energy
 
@@ -159,10 +156,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	mem_alloc(numcells + 1, &FR, 32);
 	mem_alloc(numcells + 1, &FRU, 32);
 	mem_alloc(numcells + 1, &FRE, 32);
-	mem_alloc(numcells + 1, &FRS, 32);
 	mem_alloc(numcells + 1, &FRUS, 32);
-	mem_alloc(numcells + 1, &FRS_PREV, 32);
-	mem_alloc(numcells + 1, &FRS_DIFF, 32);
 	mem_alloc(numcells + 1, &UFLUX, 32);
 	mem_alloc(numcells + 1, &dss, 32);
 	mem_alloc(numcells + 1, &uss, 32);
@@ -501,18 +495,6 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		/*------------------------------------------------*/
 
 #ifndef ORDER3
-		/* Flux entropy check */
-#pragma omp parallel num_threads(OMP_CORES)
-		{
-#pragma omp for schedule(static) 
-			for (int i = 0; i <= numcells; i++)
-			{
-				FRS[i] = dss[i] * log(pss[i] / pow(dss[i], GAMMA));
-				if (iter > 0) FRS_DIFF[i] = FRS[i] - FRS_PREV[i];
-				FRS_PREV[i] = FRS[i];
-			}
-		}
-
 		/* Euler coordinates */
 #pragma omp parallel for schedule(static)
 		for (int i = 0; i < numcells; i++)
@@ -594,7 +576,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #if (PROBLEM == 18)
 		file_n_smooth_steps(numcells, timer, tau, x_n1, R, U, P, RS_diff, S, S_diff, UFLUX);
 #else
-		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RS_diff, S, S_diff, FRS_DIFF);
+		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RS_diff, S, S_diff, UFLUX);
 #endif
 #else
 	//	output_last_step(numcells, dx, D_analit, R, U, P);
