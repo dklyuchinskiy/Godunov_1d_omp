@@ -15,8 +15,9 @@ void linear_solver(int numcells, double* R, double* U, double* P, double* dss, d
 	double *C = new double[numcells];
 	double *RC = new double[numcells];
 	double *H = new double[numcells];
+	int OMP_CORES = 1;
 
-#pragma omp parallel private(wtime)
+#pragma omp parallel private(wtime) num_threads(OMP_CORES)
 	{
 		wtime = omp_get_wtime();
 
@@ -940,13 +941,13 @@ double initial_velocity(double x)
 	return 0;
 }
 
-void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer,
-	double *R, double *U, double* P, double *RS_diff, double *S, double *S_diff, double *FRS_DIFF)
+void file_n_smooth_steps(int numcells, double timer, double tau, double* x_layer,
+	double* R, double* U, double* P, double* E, double* S, double* S_diff, double* RS_diff)
 {
 	FILE* fout, *fout_NC;
 	char FileName[255], FileName2[255];
 	double dx = LENGTH / double(numcells);
-	double ps, us, ds, cs, es, es_d, rs_d;
+	double ps, us, ds, cs, es, ss, ss_d, rs_d;
 	double D_analit = 1.371913;
 
 	int proverka[N_smooth] = { 0 };
@@ -979,13 +980,13 @@ void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer
 				//us = U[i] - 0.4533;
 				us = U[i];
 				ps = P[i];
-				cs = sqrt(GAMMA*P[i] / R[i]);
-				es = S[i];
-				es_d = S_diff[i];
+				es = E[i];
+				ss = S[i];
+				ss_d = S_diff[i];
 				rs_d = RS_diff[i];
 
 #ifndef NC
-				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, cs, es, es_d, rs_d);
+				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, es, ss, ss_d, rs_d);
 #else
 				fprintf(fout_NC, "%9.6lf %lf %lf %lf %lf %lf %lf\n", x, ds, us, ps, cs, es, es_d);
 #endif
@@ -995,6 +996,56 @@ void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer
 #else
 			fclose(fout_NC);
 #endif
+			proverka[k] = 1;
+
+		}
+	}
+}
+
+void file_n_smooth_steps_techplot(int numcells, double timer, double tau, double* x_layer,
+	double* R, double* U, double* P, double* E)
+{
+	FILE* fout, * fout_NC;
+	char FileName[255], FileName2[255];
+	double dx = LENGTH / double(numcells);
+	double ps, us, ds, cs, es, ss, ss_d, rs_d;
+	double D_analit = 1.371913;
+
+	int proverka[N_smooth] = { 0 };
+	double time_control[N_smooth];
+	double k_step = time_max_array[PROBLEM] / N_smooth;
+
+	for (int i = 0; i < N_smooth; i++)
+	{
+		time_control[i] = (i + 1) * k_step;
+	}
+
+	for (int k = 0; k < N_smooth; k++)
+	{
+
+		if (fabs(timer - time_control[k]) <= tau && proverka[k] == 0)
+		{		
+			sprintf(FileName, "workspace/%03d/Techplot_N%03d_P%1d_%c_%6.4lf.dat", numcells, numcells, PROBLEM - 11, (char)TYPE, time_control[k]);
+			fout = fopen(FileName, "w");
+			
+			fprintf(fout, "TITLE = \"Riemann Problem 1D slice t=%.4lf\"\n", timer);
+			fprintf(fout, "VARIABLES=\"x\",\"ro\",\"u\",\"p\",\"e\",\"ro_ex\",\"u_ex\",\"p_ex\",\"e_ex\"\n");
+			fprintf(fout, "ZONE T=\"Numerical\", I=100, F=POINT\n");
+			
+			for (int i = 0; i < numcells; i++)
+			{
+
+				ds = R[i];
+				us = U[i];
+				ps = P[i];
+				es = E[i];
+
+				fprintf(fout, "%9.6lf %lf %lf %lf %lf %lf %lf %lf %lf\n", x_layer[i], ds, us, ps, es, 0, 0, 0, 0);
+
+			}
+
+			fclose(fout);
+
 			proverka[k] = 1;
 
 		}

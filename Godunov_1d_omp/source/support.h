@@ -48,6 +48,7 @@ void file_exact_diff(int numcells, double *exact_R, double *exact_U, double *exa
 void inf_before_start(int numcells, double *R, double *U, double *P, double &D_analit);
 void first_step_validation(FILE *file, int numcells, int c_c, double timer, double *R, double *U, double *P, double *dss, double *uss, double *pss);
 void file_n_smooth_steps(int numcells, double timer, double tau, double *x_layer, double *R, double *U, double* P, double *RE, double *S, double *S_diff, double *UFLUX);
+void file_n_smooth_steps_techplot(int numcells, double timer, double tau, double* x_layer, double* R, double* U, double* P, double* E);
 void null_array(double *arr, int a, int b);
 void null_array(int *arr, int a, int b);
 void set_bound(FILE *plot, int i);

@@ -24,6 +24,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	double *R,				// density
 		*P,					// pressure
 		*U,					// velocity
+		*E,                 // energy
 		*RU,				// moment of impulse
 		*RE,				// total energy
 		*RS,
@@ -74,7 +75,8 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	FILE *file;
 
 	/* Read omp threads from the environment */
-	int OMP_CORES = omp_get_max_threads();
+//	int OMP_CORES = omp_get_max_threads();
+	int OMP_CORES = 1;
 	
 	double loop_full[LOOPS] = { 0 };
 	double** LOOP_TIME = new double*[LOOPS];
@@ -112,6 +114,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	mem_alloc(numcells, &P, 32);
 	mem_alloc(numcells, &U, 32);
 	mem_alloc(numcells, &S, 32);
+	mem_alloc(numcells, &E, 32);
 	mem_alloc(numcells, &RU, 32);
 	mem_alloc(numcells, &RS, 32);
 	mem_alloc(numcells, &RE, 32);
@@ -189,7 +192,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	start_t = omp_get_wtime();
 
 	/* Mesh */
-#pragma omp for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(OMP_CORES)
 	for (int i = 0; i < numcells; i++)
 	{
 		x_init[i] = i*dx + 0.5*dx;          // that are middles of cells
@@ -256,7 +259,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 		iter++;
 		
 		loop_time = omp_get_wtime();
-#pragma omp parallel firstprivate(u1,u2,u3,u_loc) shared(u_max)
+#pragma omp parallel firstprivate(u1,u2,u3,u_loc) shared(u_max) num_threads(OMP_CORES)
 		{
 			/* CFL condition */
 #pragma omp for schedule(static, omp_chunk) nowait
@@ -496,7 +499,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 
 #ifndef ORDER3
 		/* Euler coordinates */
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(OMP_CORES)
 		for (int i = 0; i < numcells; i++)
 		{
 			x_n1[i] = x_n[i] + tau * UFLUX[i];
@@ -534,6 +537,8 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 				U[i] = RU[i] / R[i]; 
 				P[i] = (GAMMA - 1.0) * (RE[i] - 0.5 * RU[i] * U[i]);
 				S[i] = S_func(P[i], R[i]);
+				E[i] = P[i] / (GAMMA - 1.0) / R[i];
+
 				RS[i] = R[i] * S[i];
 
 				S_diff[i] = S[i] - S_prev[i];
@@ -576,7 +581,10 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 #if (PROBLEM == 18)
 		file_n_smooth_steps(numcells, timer, tau, x_n1, R, U, P, RS_diff, S, S_diff, UFLUX);
 #else
-		file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, RS_diff, S, S_diff, UFLUX);
+		//file_n_smooth_steps(numcells, timer, tau, x_init, R, U, P, E, S, S_diff, RS_diff);
+#ifdef TECHPLOT
+		file_n_smooth_steps_techplot(numcells, timer, tau, x_init, R, U, P, E);
+#endif
 #endif
 #else
 	//	output_last_step(numcells, dx, D_analit, R, U, P);
@@ -653,7 +661,7 @@ void iteration(int numb, double* F_ro, double* ITER_TIME)
 	
 	/* Print output files using GNUPLOT */
 #if defined(PRINT) && defined(OUTPUT_N_SMOOTH)
-	gnuplot_n_smooth2(numcells, sw1_num, sw2_num, sw3_num);
+	//gnuplot_n_smooth2(numcells, sw1_num, sw2_num, sw3_num);
 #if (PROBLEM==2 || PROBLEM==9)
 //	gnuplot_analitical_riemann2(numcells, w_num_r, w_num_u, w_num_p);
 #endif

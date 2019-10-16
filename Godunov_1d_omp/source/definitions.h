@@ -69,7 +69,9 @@ to enable the respective job.
 #define EPS		1.0e-6	// the threshold for the solving nonlinear solution
 #define MAX_ITER	20	// the number of iteration to find nonlinear solution
 
-#define PROBLEM		0
+#define TECHPLOT
+
+#define PROBLEM		16
 /*
 0 - shock wave
 1 - rarify wave

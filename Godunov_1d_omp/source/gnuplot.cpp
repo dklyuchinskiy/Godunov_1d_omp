@@ -111,7 +111,7 @@ void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth],
 			// SMALL OR BIG
 			small = 0;
 		}
-		if (i == 3) continue;  // entropy - 4 , diff in entropy - 5
+
 		plot = fopen("N_smooth2.plt", "w");
 		for (int k = 0; k < N_smooth; k++)
 		{
@@ -127,6 +127,7 @@ void gnuplot_n_smooth2(int numcells, int sw1[3][N_smooth], int sw2[3][N_smooth],
 			if (i == 0) fprintf(plot, "set ylabel \"density\"\n");
 			if (i == 1)	fprintf(plot, "set ylabel \"velocity\"\n");
 			if (i == 2)	fprintf(plot, "set ylabel \"pressure\"\n");
+			if (i == 3) fprintf(plot, "set ylabel \"energy\"\n");
 			if (i == 4)	fprintf(plot, "set ylabel \"entropy\"\n");
 			if (i == 5)	fprintf(plot, "set ylabel \"entropy difference\"\n");
 			if (i == 6)	fprintf(plot, "set ylabel \"entropy integral difference\"\n");

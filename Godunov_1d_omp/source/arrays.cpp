@@ -19,7 +19,8 @@ const double g6 = (GAMMA - 1.0) / (GAMMA + 1.0);
 const double g7 = (GAMMA - 1.0) / 2.0;
 const double g8 = GAMMA - 1.0;
 
-char prop[7] = { 'R', 'U', 'P', 'C', 'S', 'D', 'E' };
+// density, velocity, pressure, energy, entropy, difference entropy, integral difference entropy
+char prop[7] = { 'R', 'U', 'P', 'E', 'S', 'D', 'G' };
 
 /***** Maximal time of computations *****/
 #ifdef SW_POINTS_PRINT
